@@ -12,7 +12,7 @@ COPY pom.xml .
 COPY src /app/src
 
 # Compila el proyecto y genera el JAR
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -Dfile.encoding=UTF-8
 
 # ----------------------------------------------------
 # STAGE 2: FINAL - Ejecuta la aplicación (solo necesita JRE)
