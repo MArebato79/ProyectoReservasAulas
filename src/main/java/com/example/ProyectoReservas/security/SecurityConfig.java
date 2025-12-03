@@ -5,7 +5,6 @@ import com.example.ProyectoReservas.services.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -38,7 +37,6 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
@@ -53,49 +51,48 @@ public class SecurityConfig {
                         )
                 )
                 .sessionManagement(session -> session
-
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 );
 
         return http.build();
     }
 
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
+        // Permitir cualquier origen (útil para pruebas, restringir en producción)
         configuration.setAllowedOrigins(List.of("*"));
 
+        // Métodos permitidos
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 
+        // Cabeceras que el cliente puede ENVIAR
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+
+        // [NUEVO] Cabeceras que el cliente puede LEER de la respuesta
+        // Esto soluciona que el JS no sepa que la respuesta es JSON
+        configuration.setExposedHeaders(List.of("Authorization", "Content-Type"));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Aplicar esta configuración a todas las rutas
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
-    // 1. Expone el AuthenticationManager (Resuelve el error "Could not autowire")
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
-    // 2. Define el proveedor de autenticación (Necesario para que el login funcione)
     @Bean
     public DaoAuthenticationProvider daoAuthenticationProvider(
             CustomUserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder) {
-
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }
-
-    // =======================================================
-
 
     @Bean
     public JwtDecoder jwtDecoder() {
@@ -107,7 +104,6 @@ public class SecurityConfig {
         JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
         authoritiesConverter.setAuthoritiesClaimName("roles");
         authoritiesConverter.setAuthorityPrefix("");
-
         JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
         jwtConverter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
         return jwtConverter;

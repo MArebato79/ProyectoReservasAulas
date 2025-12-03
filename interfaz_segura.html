@@ -142,34 +142,26 @@
             const res = await fetch(`${API}${endpoint}`, config);
             console.log(`[FETCH] Respuesta recibida: Status ${res.status}`);
 
-            // Manejo de errores de seguridad
             if (res.status === 401) {
                 console.error('ERROR 401: Sesión expirada o no autorizada.');
-                mostrar({ error: 'ERROR 401: Sesión expirada o no autorizada. Por favor, inicie sesión de nuevo.' });
+                mostrar({ error: 'ERROR 401: Sesión expirada. Inicie sesión de nuevo.' });
                 logout();
                 return null;
             }
-            if (res.status === 403) {
-                console.error('ERROR 403: Acceso prohibido. El usuario actual no tiene el rol necesario.');
-                const text = await res.text();
-                mostrar({ status: 403, error: 'Acceso prohibido. El usuario actual no tiene el rol necesario.', server_response: text });
-                return null;
-            }
 
-            // Manejo de 204 No Content
             if (res.status === 204) {
                 return { message: `${method} ${endpoint} exitoso: 204 No Content` };
             }
 
-            // Lectura de la respuesta (JSON o texto)
-            const contentType = res.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                return await res.json();
-            } else {
-                const text = await res.text();
+            // [MEJORA] Leemos el texto primero para evitar errores de parsing
+            const text = await res.text();
+
+            try {
+                // Intentamos parsear como JSON siempre
+                return JSON.parse(text);
+            } catch (e) {
+                // Si falla el parseo, devolvemos el texto o un mensaje por defecto
                 if (!res.ok) {
-                    console.error(`ERROR ${res.status}: Fallo en la petición.`, text);
-                    // Devolver el texto de error de Spring Boot
                     return { status: res.status, error: text || `${method} ${endpoint} fallido.` };
                 }
                 return { message: text || `${method} ${endpoint} exitoso: Sin contenido de respuesta.` };
@@ -182,7 +174,7 @@
         }
     }
 
-    // --- AUTH & GET (Sin cambios) ---
+    // --- AUTH ---
     async function login() {
         const email = document.getElementById('authEmail').value;
         const password = document.getElementById('authPassword').value;
@@ -198,9 +190,19 @@
         }
     }
 
+    // [MEJORA] Función register mejorada para no depender de formularios
     async function register(role) {
+        // Prevenir comportamiento por defecto si se llamara desde un form (opcional)
+        if(event) event.preventDefault();
+
         const email = document.getElementById('authEmail').value;
         const password = document.getElementById('authPassword').value;
+
+        if(!email || !password) {
+            mostrar({error: "Por favor introduce email y contraseña"});
+            return;
+        }
+
         const endpoint = role === 'admin' ? '/auth/register/admin' : '/auth/register';
         const data = await authenticatedFetch(endpoint, 'POST', { email, password });
         mostrar(data);
@@ -213,6 +215,7 @@
         mostrar({ message: "Sesión cerrada. Token eliminado." });
     }
 
+    // --- GET ---
     async function getAulas() {
         const data = await authenticatedFetch('/aulas');
         mostrar(data);
@@ -231,30 +234,18 @@
         mostrar(data);
     }
 
-    // --- CREACIÓN (CORREGIDA) ---
-
-    // CORRECCIÓN: Se asegura que el booleano y los números sean el tipo correcto.
+    // --- CREACIÓN ---
     async function crearAula() {
         const aula = {
             nombre: document.getElementById('nombreAula').value,
-            // Usamos parseInt para asegurar que es Integer, como espera AulaRequest.java
             capacidad: parseInt(document.getElementById('capacidadAula').value, 10),
-            // Esto asegura que se envía un Boolean nativo (true/false)
             esDeOrdenadores: document.getElementById('ordenadoresAula').checked,
             numeroOrdenadores: parseInt(document.getElementById('numOrdenadoresAula').value, 10)
         };
-
-        // Comprobación rápida de validación del frontend (opcional)
-        if (!aula.nombre || isNaN(aula.capacidad) || isNaN(aula.numeroOrdenadores) || aula.capacidad < 1) {
-            mostrar({ error: "Faltan campos obligatorios o la capacidad es inválida." });
-            return;
-        }
-
         const data = await authenticatedFetch('/aulas', 'POST', aula);
         mostrar(data);
     }
 
-    // CORRECCIÓN: Se asegura que los valores de ENUM y los números sean correctos.
     async function crearHorario() {
         const dia = document.getElementById('diaSemanaHorario').value;
         const tipo = document.getElementById('tipoHorario').value;
@@ -262,54 +253,41 @@
         const horaInicio = document.getElementById('horaInicioHorario').value;
         const horaFin = document.getElementById('horaFinHorario').value;
 
-        // Comprobación básica de validación del frontend
-        if (!dia || !tipo || isNaN(sesionDia) || sesionDia < 1 || !horaInicio || !horaFin) {
-            mostrar({ error: "Faltan campos obligatorios para el Horario (Día, Tipo, Sesión, Horas)." });
+        if (!dia || !tipo || isNaN(sesionDia)) {
+            mostrar({ error: "Faltan campos del horario." });
             return;
         }
 
-        // Aseguramos el formato "HH:mm:ss" para LocalTime en Java
         const horario = {
             dia: dia,
             sesionDia: sesionDia,
-            // Añadimos segundos si el input no los tiene (aunque el input type="time" con step="1" ya ayuda)
             horaInicio: horaInicio.length === 5 ? horaInicio + ':00' : horaInicio,
-            horaFim: horaFin.length === 5 ? horaFin + ':00' : horaFin, // Mapeo a horaFim, como en HorarioRequest.java
+            horaFim: horaFin.length === 5 ? horaFin + ':00' : horaFin,
             tipo: tipo
         };
-
         const data = await authenticatedFetch('/horarios', 'POST', horario);
         mostrar(data);
     }
 
-    // CORRECCIÓN: Se asegura que los IDs y los números sean el tipo correcto.
     async function crearReserva() {
         const aulaId = parseInt(document.getElementById('idAulaReserva').value, 10);
         const horarioId = parseInt(document.getElementById('idHorarioReserva').value, 10);
-        const usuarioId = parseInt(document.getElementById('idUsuarioReserva').value, 10);
+        const usuarioId = parseInt(document.getElementById('idUsuarioReserva').value, 10); // NOTA: Normalmente el usuario se saca del Token en el backend
         const asistentes = parseInt(document.getElementById('asistentesReserva').value, 10);
 
         const reserva = {
-            fechaReserva: document.getElementById('fechaReserva').value, // Formato "YYYY-MM-DD"
+            fechaReserva: document.getElementById('fechaReserva').value,
             motivo: document.getElementById('motivoReserva').value,
             numeroAsistentes: asistentes,
             aulaId: aulaId,
             horarioId: horarioId,
             usuarioId: usuarioId
         };
-
-        // Comprobación rápida de validación del frontend (opcional)
-        if (!reserva.fechaReserva || !reserva.motivo || isNaN(asistentes) || isNaN(aulaId) || isNaN(horarioId) || isNaN(usuarioId) || asistentes < 1) {
-            mostrar({ error: "Faltan campos obligatorios o los IDs/asistentes son inválidos para la Reserva." });
-            return;
-        }
-
-
         const data = await authenticatedFetch('/reservas', 'POST', reserva);
         mostrar(data);
     }
 
-    // Inicializar el estado al cargar la página
+    // Inicializar
     updateAuthStatus();
 </script>
 </body>
