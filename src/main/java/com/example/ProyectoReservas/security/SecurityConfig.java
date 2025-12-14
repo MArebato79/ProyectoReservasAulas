@@ -42,6 +42,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/admin/**").permitAll()
+                        .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
+            // Permitimos archivos estáticos (css, js) si tuvieras carpetas
+                        .requestMatchers("/static/**", "/css/**", "/js/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
