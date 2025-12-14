@@ -102,7 +102,7 @@
 </section>
 
 <script>
-    const API = 'https://proyectoreservasaulas-miguelangelrebato.onrender.com/interfaz_segura.hmtl';
+    const API = window.location.origin;
     let currentToken = localStorage.getItem('jwtToken');
 
     // --- UTILITIES ---
@@ -291,4 +291,5 @@
     updateAuthStatus();
 </script>
 </body>
+
 </html>
