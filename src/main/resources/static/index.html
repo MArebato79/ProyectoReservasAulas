@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestor de Reservas - Autenticado (v3)</title>
+    <style>
+        /* Estilos CSS (Sin cambios) */
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f6f6f6; }
+        h1, h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px;}
+        button { margin-top: 5px; padding: 8px 15px; cursor: pointer; background-color: #3498db; color: white; border: none; border-radius: 4px; transition: background-color 0.3s; }
+        button:hover { background-color: #2980b9; }
+        input, select { margin: 3px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        pre { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; }
+        #estado-auth { padding: 10px; border-radius: 4px; margin-bottom: 15px; }
+        .success { background-color: #e8f9e8; color: #27ae60; border: 1px solid #27ae60; }
+        .error { background-color: #fcebeb; color: #c0392b; border: 1px solid #c0392b; }
+    </style>
+</head>
+<body>
+
+<h1>API de Reservas de Aulas (Acceso Seguro)</h1>
+
+<div id="estado-auth">
+    Estado de Autenticación: <strong id="token-status">No autenticado</strong>.
+    <button onclick="logout()">Cerrar Sesión</button>
+</div>
+
+<!-- SECCIÓN DE AUTENTICACIÓN -->
+<section>
+    <h2>🔐 Autenticación</h2>
+    <input id="authEmail" type="email" placeholder="Email">
+    <input id="authPassword" type="password" placeholder="Contraseña">
+    <button onclick="login()">Login</button>
+    <button onclick="register('profesor')">Registrar Profesor</button>
+    <button onclick="register('admin')">Registrar Admin</button>
+</section>
+
+<!-- SECCIÓN DE AULAS -->
+<section>
+    <h2>📘 Aulas</h2>
+    <button onclick="getAulas()">Ver todas las aulas (GET /aulas)</button><br>
+    <input id="idAulaGet" type="number" placeholder="ID Aula (ej: 1)">
+    <button onclick="getAulaById()">Ver Aula por ID</button>
+    <hr>
+    <h3>Crear Aula (POST /aulas)</h3>
+    <!-- esDeOrdenadores es un Boolean en AulaRequest.java -->
+    <input id="nombreAula" placeholder="Nombre (ej: Lab Fís.)">
+    <input id="capacidadAula" type="number" placeholder="Capacidad (ej: 30)">
+    <label><input id="ordenadoresAula" type="checkbox"> Aula de ordenadores</label>
+    <input id="numOrdenadoresAula" type="number" value="0" placeholder="Nº ordenadores (ej: 15)">
+    <button onclick="crearAula()">Crear Aula</button>
+</section>
+
+<!-- SECCIÓN DE HORARIOS -->
+<section>
+    <h2>🕒 Horarios</h2>
+    <button onclick="getHorarios()">Ver todos los horarios (GET /horarios)</button><br>
+    <hr>
+    <h3>Crear Horario (POST /horarios)</h3>
+    <!-- Los ENUM deben coincidir con diaSemana.java (LUNES, etc.) y tipoHorario.java (LECTIVO, etc.) -->
+    <select id="diaSemanaHorario">
+        <option value="">Selecciona Día</option>
+        <option value="LUNES">LUNES</option>
+        <option value="MARTES">MARTES</option>
+        <option value="MIERCOLES">MIÉRCOLES</option>
+        <option value="JUEVES">JUEVES</option>
+        <option value="VIERNES">VIERNES</option>
+    </select>
+    <input id="sesionDiaHorario" type="number" placeholder="Sesión Día (ej: 1)">
+    <!-- LocalTime espera HH:mm:ss -->
+    <input id="horaInicioHorario" type="time" step="1" value="08:00:00">
+    <input id="horaFinHorario" type="time" step="1" value="10:00:00">
+    <select id="tipoHorario">
+        <option value="">Selecciona Tipo</option>
+        <option value="LECTIVO">LECTIVO</option>
+        <option value="RECREO">RECREO</option>
+        <option value="MEDIO_DIA">MEDIO_DÍA</option>
+    </select>
+    <button onclick="crearHorario()">Crear Horario</button>
+</section>
+
+<!-- SECCIÓN DE RESERVAS -->
+<section>
+    <h2>📅 Reservas</h2>
+    <button onclick="getReservas()">Ver todas las reservas (GET /reservas)</button><br>
+    <hr>
+    <h3>Crear Reserva (POST /reservas)</h3>
+    <!-- Los IDs son Long en el backend, por eso usamos parseInt o + -->
+    <input id="fechaReserva" type="date">
+    <input id="motivoReserva" placeholder="Motivo">
+    <input id="asistentesReserva" type="number" placeholder="Asistentes">
+    <input id="idAulaReserva" type="number" placeholder="ID Aula (ej: 1)">
+    <input id="idHorarioReserva" type="number" placeholder="ID Horario (ej: 1)">
+    <input id="idUsuarioReserva" type="number" placeholder="ID Usuario (ej: 1)">
+    <button onclick="crearReserva()">Crear Reserva</button>
+</section>
+
+<section>
+    <h2>🧾 Resultado</h2>
+    <pre id="output"></pre>
+</section>
+
+<script>
+    const API = 'https://proyectoreservasaulas-miguelangelrebato.onrender.com/interfaz_segura.hmtl';
+    let currentToken = localStorage.getItem('jwtToken');
+
+    // --- UTILITIES ---
+
+    function updateAuthStatus() {
+        const statusElement = document.getElementById('token-status');
+        const authDiv = document.getElementById('estado-auth');
+        if (currentToken) {
+            statusElement.textContent = 'Autenticado (Token presente)';
+            authDiv.className = 'success';
+        } else {
+            statusElement.textContent = 'No autenticado';
+            authDiv.className = 'error';
+        }
+    }
+
+    function mostrar(data) {
+        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function authenticatedFetch(endpoint, method = 'GET', bodyData = null) {
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        if (currentToken) {
+            headers['Authorization'] = `Bearer ${currentToken}`;
+        }
+
+        const config = { method: method, headers: headers };
+        if (bodyData) {
+            config.body = JSON.stringify(bodyData);
+        }
+
+        console.log(`[FETCH] Enviando ${method} a ${API}${endpoint}...`);
+
+        try {
+            const res = await fetch(`${API}${endpoint}`, config);
+            console.log(`[FETCH] Respuesta recibida: Status ${res.status}`);
+
+            if (res.status === 401) {
+                console.error('ERROR 401: Sesión expirada o no autorizada.');
+                mostrar({ error: 'ERROR 401: Sesión expirada. Inicie sesión de nuevo.' });
+                logout();
+                return null;
+            }
+
+            if (res.status === 204) {
+                return { message: `${method} ${endpoint} exitoso: 204 No Content` };
+            }
+
+            // [MEJORA] Leemos el texto primero para evitar errores de parsing
+            const text = await res.text();
+
+            try {
+                // Intentamos parsear como JSON siempre
+                return JSON.parse(text);
+            } catch (e) {
+                // Si falla el parseo, devolvemos el texto o un mensaje por defecto
+                if (!res.ok) {
+                    return { status: res.status, error: text || `${method} ${endpoint} fallido.` };
+                }
+                return { message: text || `${method} ${endpoint} exitoso: Sin contenido de respuesta.` };
+            }
+
+        } catch (error) {
+            console.error('ERROR de red/fetch:', error);
+            mostrar({ error: 'Error de red o CORS al contactar con el servidor.' });
+            return null;
+        }
+    }
+
+    // --- AUTH ---
+    async function login() {
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        const data = await authenticatedFetch('/auth/login', 'POST', { email, password });
+
+        if (data && data.token) {
+            currentToken = data.token;
+            localStorage.setItem('jwtToken', currentToken);
+            updateAuthStatus();
+            mostrar({ message: "Login exitoso. Token almacenado.", token: data.token.substring(0, 10) + '...' });
+        } else if (data) {
+            mostrar(data);
+        }
+    }
+
+    // [MEJORA] Función register mejorada para no depender de formularios
+    async function register(role) {
+        // Prevenir comportamiento por defecto si se llamara desde un form (opcional)
+        if(event) event.preventDefault();
+
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+
+        if(!email || !password) {
+            mostrar({error: "Por favor introduce email y contraseña"});
+            return;
+        }
+
+        const endpoint = role === 'admin' ? '/auth/register/admin' : '/auth/register';
+        const data = await authenticatedFetch(endpoint, 'POST', { email, password });
+        mostrar(data);
+    }
+
+    function logout() {
+        currentToken = null;
+        localStorage.removeItem('jwtToken');
+        updateAuthStatus();
+        mostrar({ message: "Sesión cerrada. Token eliminado." });
+    }
+
+    // --- GET ---
+    async function getAulas() {
+        const data = await authenticatedFetch('/aulas');
+        mostrar(data);
+    }
+    async function getAulaById() {
+        const id = document.getElementById('idAulaGet').value;
+        const data = await authenticatedFetch(`/aulas/${id}`);
+        mostrar(data);
+    }
+    async function getHorarios() {
+        const data = await authenticatedFetch('/horarios');
+        mostrar(data);
+    }
+    async function getReservas() {
+        const data = await authenticatedFetch('/reservas');
+        mostrar(data);
+    }
+
+    // --- CREACIÓN ---
+    async function crearAula() {
+        const aula = {
+            nombre: document.getElementById('nombreAula').value,
+            capacidad: parseInt(document.getElementById('capacidadAula').value, 10),
+            esDeOrdenadores: document.getElementById('ordenadoresAula').checked,
+            numeroOrdenadores: parseInt(document.getElementById('numOrdenadoresAula').value, 10)
+        };
+        const data = await authenticatedFetch('/aulas', 'POST', aula);
+        mostrar(data);
+    }
+
+    async function crearHorario() {
+        const dia = document.getElementById('diaSemanaHorario').value;
+        const tipo = document.getElementById('tipoHorario').value;
+        const sesionDia = parseInt(document.getElementById('sesionDiaHorario').value, 10);
+        const horaInicio = document.getElementById('horaInicioHorario').value;
+        const horaFin = document.getElementById('horaFinHorario').value;
+
+        if (!dia || !tipo || isNaN(sesionDia)) {
+            mostrar({ error: "Faltan campos del horario." });
+            return;
+        }
+
+        const horario = {
+            dia: dia,
+            sesionDia: sesionDia,
+            horaInicio: horaInicio.length === 5 ? horaInicio + ':00' : horaInicio,
+            horaFim: horaFin.length === 5 ? horaFin + ':00' : horaFin,
+            tipo: tipo
+        };
+        const data = await authenticatedFetch('/horarios', 'POST', horario);
+        mostrar(data);
+    }
+
+    async function crearReserva() {
+        const aulaId = parseInt(document.getElementById('idAulaReserva').value, 10);
+        const horarioId = parseInt(document.getElementById('idHorarioReserva').value, 10);
+        const usuarioId = parseInt(document.getElementById('idUsuarioReserva').value, 10); // NOTA: Normalmente el usuario se saca del Token en el backend
+        const asistentes = parseInt(document.getElementById('asistentesReserva').value, 10);
+
+        const reserva = {
+            fechaReserva: document.getElementById('fechaReserva').value,
+            motivo: document.getElementById('motivoReserva').value,
+            numeroAsistentes: asistentes,
+            aulaId: aulaId,
+            horarioId: horarioId,
+            usuarioId: usuarioId
+        };
+        const data = await authenticatedFetch('/reservas', 'POST', reserva);
+        mostrar(data);
+    }
+
+    // Inicializar
+    updateAuthStatus();
+</script>
+</body>
+</html>
