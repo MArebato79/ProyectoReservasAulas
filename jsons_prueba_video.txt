@@ -1,0 +1,72 @@
+
+Inserts de aulas en formato JSON:
+
+{
+    "nombre": "Laboratorio 3 (Robots)",
+    "capacidad": 24,
+    "esDeOrdenadores": true,
+    "numeroOrdenadores": 24
+}
+
+{
+    "nombre": "Aula Módulo B",
+    "capacidad": 50,
+    "esDeOrdenadores": false,
+    "numeroOrdenadores": 0
+}
+inserts de horarios en formato JSON:
+
+{
+    "dia": "JUEVES",
+    "sesionDia": 3,
+    "horaInicio": "13:30:00",
+    "horaFim": "14:30:00",
+    "tipo": "MEDIO_DIA"
+}
+
+{
+    "dia": "MARTES",
+    "sesionDia": 7,
+    "horaInicio": "19:00:00",
+    "horaFim": "20:00:00",
+    "tipo": "LECTIVO"
+}
+Inserts de reservas en formato JSON:
+
+{
+    "fechaReserva": "2026-03-13",
+    "motivo": "Prácticas de Edición de Video",
+    "numeroAsistentes": 15,
+    "aulaId": 4,
+    "horarioId": 4
+}
+
+{
+    "fechaReserva": "2026-03-16",
+    "motivo": "Clase de Introducción a Java",
+    "numeroAsistentes": 35,
+    "aulaId": 3,
+    "horarioId": 5
+}
+
+{
+    "fechaReserva": "2026-04-05",
+    "motivo": "Taller Avanzado de Robótica",
+    "numeroAsistentes": 18,
+    "aulaId": 7,
+    "horarioId": 6
+}
+
+{
+    "fechaReserva": "2026-04-06",
+    "motivo": "Reunión rápida de coordinación",
+    "numeroAsistentes": 5,
+    "aulaId": 6,
+    "horarioId": 7
+}
+
+inserts de usuarios en formato JSON:
+{
+ "email": "profe@test.com",
+ "password": "profe123"
+}
