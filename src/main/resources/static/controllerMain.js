@@ -97,7 +97,7 @@ DOM.botones.btnVerReservas.addEventListener('click', cargarReservas);
 
 async function crearAulas() {
     const nombre = DOM.aula.nombre.value;
-    const capacidad = parseInt(DOM.aula.email.value,10);
+    const capacidad = parseInt(DOM.aula.capacidad.value,10);
     const esOrdenadores = DOM.aula.esOrdenadores.checked;
     const numOrdenadores = parseInt(DOM.aula.numOrdenadores.value,10);
 
@@ -115,7 +115,7 @@ async function crearAulas() {
 }
 
 async function crearHorarios() {
-    const dia = parseInt(DOM.horario.dia.value,10);
+    const dia = DOM.horario.dia.value;
     const tipo = DOM.horario.tipo.value;
     const sesion = parseInt(DOM.horario.sesion.value,10);
     const horaInicio = DOM.horario.inicio.value;
