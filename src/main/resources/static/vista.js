@@ -12,7 +12,7 @@ export function mostrar(data) {
 
 export function updateAuthStatus() {
     const currentStatus = localStorage.getItem('jwtToken');
-    if (currentToken) {
+    if (currentStatus) {
         statusElement.textContent = 'Autenticado (Token presente)';
         authDiv.className = 'success';
     } else {
