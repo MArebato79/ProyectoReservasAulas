@@ -292,7 +292,7 @@
         const contenedor = document.getElementById('contenedor-reservas');
 
         // Si la lista está vacía o hay error
-        if (!Array.isArray(listaReservas)) {
+        if (!Array.isArray(listaReservas)||listaReservas.length === 0) {
             contenedor.innerHTML = '<p style="color: #c0392b;font-weight: bold">No hay reservas para mostrar</p>';
             return;
         }
@@ -333,4 +333,5 @@
 </body>
 
 </html>
+
 
