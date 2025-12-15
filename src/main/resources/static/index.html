@@ -287,6 +287,24 @@
         const data = await authenticatedFetch('/reservas', 'POST', reserva);
         mostrar(data);
     }
+
+     async function borrarReserva(id) {
+        if (!confirm("¿Estás seguro de que quieres eliminar esta reserva?")) {
+            return; // Si dice que no, no hacemos nada
+        }
+
+        // Llamada al backend
+        const respuesta = await authenticatedFetch(`/reservas/${id}`, 'DELETE');
+
+        // authenticatedFetch devuelve null si hay error grave, o un objeto si hay respuesta
+        // Si la respuesta fue un éxito (status 204 No Content), authenticatedFetch devuelve un mensaje
+        if (respuesta && !respuesta.error) {
+            alert("Reserva eliminada correctamente");
+            getReservas(); // <--- ¡TRUCO! Recargamos la lista para ver los cambios
+        } else {
+            alert("Error al borrar: " + (respuesta?.error || "Desconocido"));
+        }
+    }
     
     function pintarReservas(listaReservas) {
         const contenedor = document.getElementById('contenedor-reservas');
@@ -333,6 +351,7 @@
 </body>
 
 </html>
+
 
 
 
