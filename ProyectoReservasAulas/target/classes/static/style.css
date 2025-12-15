@@ -1,0 +1,10 @@
+body { font-family: Arial, sans-serif; margin: 30px; background-color: #f6f6f6; }
+h1, h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px;}
+button { margin-top: 5px; padding: 8px 15px; cursor: pointer; background-color: #3498db; color: white; border: none; border-radius: 4px; transition: background-color 0.3s; }
+button:hover { background-color: #2980b9; }
+input, select { margin: 3px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+pre { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; }
+#estado-auth { padding: 10px; border-radius: 4px; margin-bottom: 15px; }
+.success { background-color: #e8f9e8; color: #27ae60; border: 1px solid #27ae60; }
+.error { background-color: #fcebeb; color: #c0392b; border: 1px solid #c0392b; }

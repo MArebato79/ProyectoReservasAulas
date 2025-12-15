@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestor de Reservas - Autenticado (v3)</title>
+    <style src="style.css"></style>
+</head>
+<body>
+
+<h1>API de Reservas de Aulas (Acceso Seguro)</h1>
+
+<div id="estado-auth">
+    Estado de Autenticación: <strong id="token-status">No autenticado</strong>.
+    <button id="btn-logout">Cerrar Sesión</button>
+</div>
+
+<!-- SECCIÓN DE AUTENTICACIÓN -->
+<section>
+    <h2>🔐 Autenticación</h2>
+    <input id="authEmail" type="email" placeholder="Email">
+    <input id="authPassword" type="password" placeholder="Contraseña">
+    <button id="btn-login">Login</button>
+    <button id="btn-register-profe">Registrar Profesor</button>
+    <button id="btn-register-admin">Registrar Admin</button>
+</section>
+
+<!-- SECCIÓN DE AULAS -->
+<section>
+    <h2>📘 Aulas</h2>
+    <button id="btn-verAulas">Ver todas las aulas (GET /aulas)</button><br>
+    <input id="idAulaGet" type="number" placeholder="ID Aula (ej: 1)">
+    <button id="btn-aulasId">Ver Aula por ID</button>
+    <hr>
+    <h3>Crear Aula (POST /aulas)</h3>
+    <!-- esDeOrdenadores es un Boolean en AulaRequest.java -->
+    <input id="nombreAula" placeholder="Nombre (ej: Lab Fís.)">
+    <input id="capacidadAula" type="number" placeholder="Capacidad (ej: 30)">
+    <label><input id="ordenadoresAula" type="checkbox"> Aula de ordenadores</label>
+    <input id="numOrdenadoresAula" type="number" value="0" placeholder="Nº ordenadores (ej: 15)">
+    <button id="btn-crearAula">Crear Aula</button>
+</section>
+
+<!-- SECCIÓN DE HORARIOS -->
+<section>
+    <h2>🕒 Horarios</h2>
+    <button id="btn-verHorarios">Ver todos los horarios (GET /horarios)</button><br>
+    <hr>
+    <h3>Crear Horario (POST /horarios)</h3>
+    <!-- Los ENUM deben coincidir con diaSemana.java (LUNES, etc.) y tipoHorario.java (LECTIVO, etc.) -->
+    <select id="diaSemanaHorario">
+        <option value="">Selecciona Día</option>
+        <option value="LUNES">LUNES</option>
+        <option value="MARTES">MARTES</option>
+        <option value="MIERCOLES">MIÉRCOLES</option>
+        <option value="JUEVES">JUEVES</option>
+        <option value="VIERNES">VIERNES</option>
+    </select>
+    <input id="sesionDiaHorario" type="number" placeholder="Sesión Día (ej: 1)">
+    <!-- LocalTime espera HH:mm:ss -->
+    <input id="horaInicioHorario" type="time" step="1" value="08:00:00">
+    <input id="horaFinHorario" type="time" step="1" value="10:00:00">
+    <select id="tipoHorario">
+        <option value="">Selecciona Tipo</option>
+        <option value="LECTIVO">LECTIVO</option>
+        <option value="RECREO">RECREO</option>
+        <option value="MEDIO_DIA">MEDIO_DÍA</option>
+    </select>
+    <button id="btn-crearHorario">Crear Horario</button>
+</section>
+
+<!-- SECCIÓN DE RESERVAS -->
+<section>
+    <h2>📅 Reservas</h2>
+    <button id="btn-verReservas">Ver todas las reservas (GET /reservas)</button><br>
+    <hr>
+    <h3>Crear Reserva (POST /reservas)</h3>
+    <!-- Los IDs son Long en el backend, por eso usamos parseInt o + -->
+    <input id="fechaReserva" type="date">
+    <input id="motivoReserva" placeholder="Motivo">
+    <input id="asistentesReserva" type="number" placeholder="Asistentes">
+    <input id="idAulaReserva" type="number" placeholder="ID Aula (ej: 1)">
+    <input id="idHorarioReserva" type="number" placeholder="ID Horario (ej: 1)">
+    <input id="idUsuarioReserva" type="number" placeholder="ID Usuario (ej: 1)">
+    <button id="btn-crearReverva">Crear Reserva</button>
+</section>
+
+<section>
+    <h2>🧾 Resultado</h2>
+    <pre id="output"></pre>
+    <div id="contenedor-reservas" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+    </div>
+</section>
+
+<script src="controllerMain.js" type="module"></script>
+</body>
+
+</html>
