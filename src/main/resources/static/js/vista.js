@@ -6,24 +6,52 @@ const contenedor=DOM.elementos.contenedor;
 const statusElement=DOM.auth.status;
 const authDiv=DOM.auth.div;
 
+// src/main/resources/static/js/vista.js
+
 export function mostrar(data) {
-    // Si hay mensaje de error
-    if (data.error || (data.mensaje && data.mensaje.toLowerCase().includes('error'))) {
+    // 1. CASO ERROR (Backend envía { error: "..." })
+    if (data.error) {
         Swal.fire({
-            icon: 'error', // Icono de cruz roja
-            title: '¡Vaya!',
-            text: data.error || data.mensaje,
+            icon: 'error',
+            title: 'Error',
+            text: data.error,
+            confirmButtonColor: '#d33'
         });
     }
-    // Si todo ha ido bien
+    // 2. CASO ÉXITO (Backend envía { mensaje: "..." })
     else if (data.mensaje) {
         Swal.fire({
-            icon: 'success', // Icono de check verde
+            icon: 'success',
             title: '¡Hecho!',
             text: data.mensaje,
-            timer: 2000, // Se cierra sola a los 2 segundos
+            timer: 2000,
             showConfirmButton: false
         });
+    }
+    // 3. CASO DATOS (Tú enviaste { datos: ... })
+    else if (data.datos) {
+        // Configuramos una notificación pequeña (Toast) arriba a la derecha
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 5000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+
+        Toast.fire({
+            icon: 'info',
+            title: 'Datos cargados correctamente'
+        });
+
+        // Opcional: Si quieres seguir viendo el JSON crudo en el cuadro de abajo
+        if (DOM.elementos.output) {
+            DOM.elementos.output.textContent = JSON.stringify(data.datos, null, 2);
+        }
     }
 }
 export function updateAuthStatus() {
