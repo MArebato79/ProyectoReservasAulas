@@ -88,7 +88,7 @@ async function cargarReservas(){
     }
 }
 DOM.botones.btnRegisterAdmin.addEventListener('click', (e) => register(e,'admin'));
-DOM.botones.btnRegisterProfe.addEventListener('click', (e) => register(this,'profe'));
+DOM.botones.btnRegisterProfe.addEventListener('click', (e) => register(e,'profe'));
 DOM.botones.btnLogin.addEventListener('click',login);
 DOM.botones.btnLogout.addEventListener('click',logout);
 DOM.botones.btnVerAulas.addEventListener('click', cargarAulas);
