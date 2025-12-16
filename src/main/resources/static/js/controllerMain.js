@@ -6,11 +6,11 @@ import {DOM} from "./document.js";
 async function login(e){
     e.preventDefault();
 
-    const Email = DOM.auth.email.value;
-    const Pass = DOM.auth.password.value;
+    const email = DOM.auth.email.value;
+    const pass = DOM.auth.password.value;
 
     try{
-        const datos = await authenticatedFetch('/auth/login','POST',{Email,Pass});
+        const datos = await authenticatedFetch('/auth/login','POST',{email:email,password:pass});
 
         if(datos && datos.token){
             localStorage.setItem('jwtToken',datos.token);
@@ -34,10 +34,10 @@ async function logout(){
 async function register(e,role){
     e.preventDefault();
 
-    const Email = DOM.auth.email.value;
-    const Pass = DOM.auth.password.value;
+    const email = DOM.auth.email.value;
+    const pass = DOM.auth.password.value;
 
-    if (!Email || !Pass) {
+    if (!email || !pass) {
         mostrar({message:'introduzca email y contraseña'});
         return;
     }
@@ -45,7 +45,7 @@ async function register(e,role){
     const endpoint = role === 'admin' ? '/auth/register/admin' : '/auth/register';
 
     try{
-        const datos = await authenticatedFetch(endpoint,'POST',{Email,Pass});
+        const datos = await authenticatedFetch(endpoint,'POST',{email:email,password:pass});
 
         if(datos && !datos.error){
             mostrar({mensaje:'Registro completado'});
