@@ -87,8 +87,8 @@ async function cargarReservas(){
         mostrar({mensaje:'cargado de reservas interrumpido'});
     }
 }
-DOM.botones.btnRegisterAdmin.addEventListener('click', register(this,'admin'));
-DOM.botones.btnRegisterProfe.addEventListener('click', register(this,'profe'));
+DOM.botones.btnRegisterAdmin.addEventListener('click', (e) => register(e,'admin'));
+DOM.botones.btnRegisterProfe.addEventListener('click', (e) => register(this,'profe'));
 DOM.botones.btnLogin.addEventListener('click',login);
 DOM.botones.btnLogout.addEventListener('click',logout);
 DOM.botones.btnVerAulas.addEventListener('click', cargarAulas);
