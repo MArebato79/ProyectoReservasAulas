@@ -1,6 +1,6 @@
-import {mostrar,pintarReservas,updateAuthStatus} from "./vista";
-import  {authenticatedFetch} from "./fecths";
-import {DOM} from "./document";
+import {mostrar,pintarReservas,updateAuthStatus} from "./vista.js";
+import  {authenticatedFetch} from "./fecths.js";
+import {DOM} from "./document.js";
 
 
 async function login(e){

@@ -1,4 +1,4 @@
-import {DOM} from "./document"
+import {DOM} from "./document.js"
 
 const output=DOM.elementos.output;
 const contenedor=DOM.elementos.contenedor;
