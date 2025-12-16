@@ -7,9 +7,25 @@ const statusElement=DOM.auth.status;
 const authDiv=DOM.auth.div;
 
 export function mostrar(data) {
-    output.textContent = JSON.stringify(data, null, 2);
+    // Si hay mensaje de error
+    if (data.error || (data.mensaje && data.mensaje.toLowerCase().includes('error'))) {
+        Swal.fire({
+            icon: 'error', // Icono de cruz roja
+            title: '¡Vaya!',
+            text: data.error || data.mensaje,
+        });
+    }
+    // Si todo ha ido bien
+    else if (data.mensaje) {
+        Swal.fire({
+            icon: 'success', // Icono de check verde
+            title: '¡Hecho!',
+            text: data.mensaje,
+            timer: 2000, // Se cierra sola a los 2 segundos
+            showConfirmButton: false
+        });
+    }
 }
-
 export function updateAuthStatus() {
     const currentStatus = localStorage.getItem('jwtToken');
     if (currentStatus) {

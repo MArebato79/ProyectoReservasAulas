@@ -15,9 +15,9 @@ async function login(e){
         if(datos && datos.token){
             localStorage.setItem('jwtToken',datos.token);
             updateAuthStatus();
-            mostrar({message:'login Correctamente.'});
+            mostrar({mensaje:'login Correctamente.'});
         }else{
-           mostrar({message:'login incorrecto'});
+           mostrar({mensaje:'login incorrecto'});
         }
 
     }catch(err){
@@ -38,7 +38,7 @@ async function register(e,role){
     const pass = DOM.auth.password.value;
 
     if (!email || !pass) {
-        mostrar({message:'introduzca email y contraseña'});
+        mostrar({mensaje:'introduzca email y contraseña'});
         return;
     }
 
