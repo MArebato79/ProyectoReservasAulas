@@ -51,7 +51,7 @@ export function pintarReservas(listaReservas) {
                 <p><strong>🏫 Aula:</strong> ${nombre}</p>
                 <p><strong>⏰ Hora:</strong> ${horaInicio}</p>
 
-                <button onclick="borrarReserva(this,${id})" style="background-color: #e74c3c;">Eliminar</button>
+                <button onclick="borrarReserva(event,${id})" style="background-color: #e74c3c;">Eliminar</button>
             </div>
         `;
     }).join('');
