@@ -63,6 +63,27 @@ export function updateAuthStatus() {
         statusElement.textContent = 'No autenticado';
         authDiv.className = 'error';
     }
+
+    ajustarPermisosVisuales();
+}
+export function ajustarPermisosVisuales() {
+    // 1. Recuperamos el rol guardado
+    const rol = localStorage.getItem('userRole');
+
+    // 2. Seleccionamos las zonas que queremos proteger
+    // (Asegúrate de poner id="admin-zone-aulas" en tu HTML como hablamos antes)
+    const zonasAdmin = document.querySelectorAll('.admin-only');
+
+    // 3. Lógica del Portero
+    const esAdmin = rol && (rol.includes('ADMIN') || rol.includes('ROLE_ADMIN'));
+
+    zonasAdmin.forEach(zona => {
+        if (esAdmin) {
+            zona.style.display = 'block'; // Mostrar si es jefe
+        } else {
+            zona.style.display = 'none';  // Ocultar si es profe o nadie
+        }
+    });
 }
 
 export function pintarReservas(listaReservas) {

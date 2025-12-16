@@ -1,4 +1,4 @@
-import {mostrar,pintarReservas,updateAuthStatus} from "./vista.js";
+import {ajustarPermisosVisuales, mostrar, pintarReservas, updateAuthStatus} from "./vista.js";
 import  {authenticatedFetch} from "./fecths.js";
 import {DOM} from "./document.js";
 
@@ -14,7 +14,11 @@ async function login(e){
 
         if(datos && datos.token){
             localStorage.setItem('jwtToken',datos.token);
+
+            const rolUsuario = payload.role || payload.roles || 'USER';
+            localStorage.setItem('userRole', rolUsuario);
             updateAuthStatus();
+
             mostrar({mensaje:'login Correctamente.'});
         }else{
            mostrar({mensaje:'login incorrecto'});
@@ -179,3 +183,19 @@ DOM.botones.btnCrearAula.addEventListener('click', crearAulas);
 DOM.botones.btnCrearHorario.addEventListener('click', crearHorarios);
 DOM.botones.btnCrearReserva.addEventListener('click', crearReservas);
 window.borrarReserva = borrarReserva;
+
+function parseJwt (token) {
+    try {
+        const base64Url = token.split('.')[1]; // Cogemos la parte 2 (Payload)
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+        return JSON.parse(jsonPayload); // Devuelve objeto JS (ej: {sub: "pepe", role: "ADMIN"})
+    } catch (e) {
+        return null;
+    }
+}
+
+ajustarPermisosVisuales();

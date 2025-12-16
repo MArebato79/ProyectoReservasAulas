@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Gestor de Reservas - Autenticado (v3)</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -21,7 +22,7 @@
     <input id="authPassword" type="password" placeholder="Contraseña">
     <button id="btn-login">Login</button>
     <button id="btn-register-profe">Registrar Profesor</button>
-    <button id="btn-register-admin">Registrar Admin</button>
+    <button id="btn-register-admin" class="admin-only">Registrar Admin</button>
 </section>
 
 <!-- SECCIÓN DE AULAS -->
@@ -33,11 +34,11 @@
     <hr>
     <h3>Crear Aula (POST /aulas)</h3>
     <!-- esDeOrdenadores es un Boolean en AulaRequest.java -->
-    <input id="nombreAula" placeholder="Nombre (ej: Lab Fís.)">
-    <input id="capacidadAula" type="number" placeholder="Capacidad (ej: 30)">
-    <label><input id="ordenadoresAula" type="checkbox"> Aula de ordenadores</label>
-    <input id="numOrdenadoresAula" type="number" value="0" placeholder="Nº ordenadores (ej: 15)">
-    <button id="btn-crearAula">Crear Aula</button>
+    <input id="nombreAula" placeholder="Nombre (ej: Lab Fís.)" class="admin-only">
+    <input id="capacidadAula" type="number" placeholder="Capacidad (ej: 30)" class="admin-only">
+    <label><input id="ordenadoresAula" type="checkbox" class="admin-only"> Aula de ordenadores</label>
+    <input id="numOrdenadoresAula" type="number" value="0" placeholder="Nº ordenadores (ej: 15)" class="admin-only">
+    <button id="btn-crearAula" class="admin-only">Crear Aula</button>
 </section>
 
 <!-- SECCIÓN DE HORARIOS -->
@@ -47,7 +48,7 @@
     <hr>
     <h3>Crear Horario (POST /horarios)</h3>
     <!-- Los ENUM deben coincidir con diaSemana.java (LUNES, etc.) y tipoHorario.java (LECTIVO, etc.) -->
-    <select id="diaSemanaHorario">
+    <select id="diaSemanaHorario" class="admin-only">
         <option value="">Selecciona Día</option>
         <option value="LUNES">LUNES</option>
         <option value="MARTES">MARTES</option>
@@ -55,17 +56,17 @@
         <option value="JUEVES">JUEVES</option>
         <option value="VIERNES">VIERNES</option>
     </select>
-    <input id="sesionDiaHorario" type="number" placeholder="Sesión Día (ej: 1)">
+    <input id="sesionDiaHorario" type="number" placeholder="Sesión Día (ej: 1)" class="admin-only">
     <!-- LocalTime espera HH:mm:ss -->
-    <input id="horaInicioHorario" type="time" step="1" value="08:00:00">
-    <input id="horaFinHorario" type="time" step="1" value="10:00:00">
-    <select id="tipoHorario">
+    <input id="horaInicioHorario" type="time" step="1" value="08:00:00" class="admin-only">
+    <input id="horaFinHorario" type="time" step="1" value="10:00:00" class="admin-only">
+    <select id="tipoHorario" class="admin-only">
         <option value="">Selecciona Tipo</option>
         <option value="LECTIVO">LECTIVO</option>
         <option value="RECREO">RECREO</option>
         <option value="MEDIO_DIA">MEDIO_DÍA</option>
     </select>
-    <button id="btn-crearHorario">Crear Horario</button>
+    <button id="btn-crearHorario" class="admin-only">Crear Horario</button>
 </section>
 
 <!-- SECCIÓN DE RESERVAS -->
