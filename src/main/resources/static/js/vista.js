@@ -43,7 +43,7 @@ export function pintarReservas(listaReservas) {
         // OPCIÓN B: Destructuring PRO (Intenta esta si te atreves)
         const {id,motivo,fechaReserva,aula:{nombre},horario:{horaInicio}, numeroAsistentes} = reserva;
         return `
-            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <div class="card-reserva" style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                 <h3 style="margin-top: 0; color: #3498db;">${motivo}</h3>
 
                 <p><strong>📅 Fecha:</strong> ${fechaReserva}</p>
@@ -51,7 +51,7 @@ export function pintarReservas(listaReservas) {
                 <p><strong>🏫 Aula:</strong> ${nombre}</p>
                 <p><strong>⏰ Hora:</strong> ${horaInicio}</p>
 
-                <button onclick="borrarReserva(${id})" style="background-color: #e74c3c;">Eliminar</button>
+                <button onclick="borrarReserva(this,${id})" style="background-color: #e74c3c;">Eliminar</button>
             </div>
         `;
     }).join('');

@@ -155,6 +155,27 @@ async function crearReservas(){
     }
 }
 
+async function borrarReserva(e,id){
+    e.preventDefault();
+
+    const tarjeta = e.target.closest('.card-reserva') || e.target.parentElement;
+    try{
+        const datos = await authenticatedFetch(`/reservas/${id}`,'DELETE',{id});
+        if(datos && !datos.error){
+            mostrar({mensaje:'Reserva borrada',datos:datos});
+
+            if (tarjeta){
+                tarjeta.remove();
+            }
+        }else{
+            mostrar({mensaje:'Problema al borrar'});
+        }
+    }catch(err){
+        mostrar({error:err});
+    }
+}
+
 DOM.botones.btnCrearAula.addEventListener('click', crearAulas);
 DOM.botones.btnCrearHorario.addEventListener('click', crearHorarios);
 DOM.botones.btnCrearReserva.addEventListener('click', crearReservas);
+window.borrarReserva = borrarReserva;
