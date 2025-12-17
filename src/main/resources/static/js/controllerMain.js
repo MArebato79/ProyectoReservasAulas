@@ -273,4 +273,4 @@ async function guardarCambiosReserva() {
         mostrar({ error: err });
     }
 }
-document.getElementById('btn-editarReserva').addEventListener('click', guardarCambiosReserva);
+window.document.getElementById('btn-editarReserva').addEventListener('click', guardarCambiosReserva);
