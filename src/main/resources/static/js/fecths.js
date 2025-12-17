@@ -6,7 +6,10 @@ export async function authenticatedFetch(endpoint, method = 'GET', bodyData = nu
     const headers = {
         'Content-Type': 'application/json',
     };
-    if (currentToken) {
+
+    const esAuth = endpoint.includes('/auth/login') || endpoint.includes('/auth/register');
+
+    if (currentToken && !esAuth) {
         headers['Authorization'] = `Bearer ${currentToken}`;
     }
 

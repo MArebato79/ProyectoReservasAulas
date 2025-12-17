@@ -9,6 +9,9 @@ async function login(e){
     const email = DOM.auth.email.value;
     const pass = DOM.auth.password.value;
 
+    localStorage.removeItem('jwtToken');
+    localStorage.removeItem('userRole');
+
     try{
         const datos = await authenticatedFetch('/auth/login','POST',{email:email,password:pass});
 
