@@ -3,6 +3,11 @@ const API = window.location.origin;
 export async function authenticatedFetch(endpoint, method = 'GET', bodyData = null) {
     const currentToken=localStorage.getItem('jwtToken');
 
+    const spinner = document.getElementById('spinner-overlay');
+
+    // 2. 👇 LO MOSTRAMOS (Quitamos la clase que lo oculta)
+    if (spinner) spinner.classList.remove('spinner-oculto');
+
     const headers = {
         'Content-Type': 'application/json',
     };
@@ -54,5 +59,7 @@ export async function authenticatedFetch(endpoint, method = 'GET', bodyData = nu
 
     } catch (error) {
         return { error: 'Error de red o CORS al contactar con el servidor.' };
+    }finally {
+        if (spinner) spinner.classList.add('spinner-oculto');
     }
 }

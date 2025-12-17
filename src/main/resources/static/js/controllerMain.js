@@ -1,5 +1,5 @@
 import {ajustarPermisosVisuales, mostrar, pintarReservas, updateAuthStatus} from "./vista.js";
-import  {authenticatedFetch} from "./fecths.js";
+import  {authenticatedFetch} from "./api.js";
 import {DOM} from "./document.js";
 
 let idReservaEditando = null;
