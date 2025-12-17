@@ -9,7 +9,6 @@ import com.example.ProyectoReservas.entities.Usuario;
 import com.example.ProyectoReservas.respositories.ReservaRepository;
 import com.example.ProyectoReservas.respositories.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,15 +22,12 @@ import java.util.stream.Collectors;
 public class ServicioReserva {
 
     private final ReservaRepository reservaRepo;
-    private final UsuarioRepository usuarioRepository; // Asumiendo que existe para obtener el Usuario
-    private final ServicioAula aulaService; // Para obtener el Aula y la capacidad
-    private final ServicioHorario horarioService; // Para obtener el Horario
-    // private final ServicioUsuario usuarioService; // Asumiendo que existe para obtener el Usuario
+    private final UsuarioRepository usuarioRepository;
+    private final ServicioAula aulaService;
+    private final ServicioHorario horarioService;
 
-    // --- Mapeo DTO (Debes completar los mapeos de Horario y Usuario) ---
-
+    // --- Mapeo DTO ---
     public ReservaDTO toDTO(Reserva reserva) {
-        //
         return ReservaDTO.builder()
                 .id(reserva.getId())
                 .fechaReserva(reserva.getFecha().toString())
@@ -43,7 +39,7 @@ public class ServicioReserva {
                 .build();
     }
 
-    // --- Lógica CRUD con DTOs ---
+    // --- Lógica CRUD ---
 
     @Transactional(readOnly = true)
     public List<ReservaDTO> listarTodos() {
@@ -59,46 +55,90 @@ public class ServicioReserva {
 
     @Transactional
     public ReservaDTO crearReserva(ReservaRequest request, String emailUsuario) {
-        // 1. Validaciones y Obtención de Entidades
+        // Validar fecha futura
         if (request.getFechaReserva().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("No se pueden crear reservas en el pasado");
         }
 
         Usuario usuario = usuarioRepository.findByEmail(emailUsuario)
-                .orElseThrow(() -> new IllegalStateException("FATAL: Usuario autenticado no encontrado en DB."));
+                .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
 
-        // Obtenemos el Aula con el ID del Request DTO
         Aula aula = aulaService.obtenerEntidadPorId(request.getAulaId())
-                .orElseThrow(() -> new IllegalArgumentException("Aula no encontrada con ID: " + request.getAulaId()));
+                .orElseThrow(() -> new IllegalArgumentException("Aula no encontrada"));
 
         Horario horario = horarioService.obtenerEntidadPorId(request.getHorarioId())
-                .orElseThrow(() -> new IllegalArgumentException("Horario no encontrado con ID: " + request.getHorarioId()));
+                .orElseThrow(() -> new IllegalArgumentException("Horario no encontrado"));
 
         if (request.getNumeroAsistentes() > aula.getCapacidad()) {
-            throw new IllegalArgumentException("Número de asistentes mayor que la capacidad del aula");
+            throw new IllegalArgumentException("El aforo supera la capacidad del aula (" + aula.getCapacidad() + ")");
         }
 
-        // 2. Validación de Solapamiento (Lógica clave)
-        boolean existeSolapamiento = reservaRepo.existsByAulaIdAndFechaAndHorarioId(
-                request.getAulaId(),
-                request.getFechaReserva(),
-                request.getHorarioId()
-        );
-
-        if (existeSolapamiento) {
+        if (reservaRepo.existsByAulaIdAndFechaAndHorarioId(request.getAulaId(), request.getFechaReserva(), request.getHorarioId())) {
             throw new IllegalStateException("El aula ya está reservada en ese horario");
         }
 
-        // 3. Mapeo y Persistencia
         Reserva reserva = new Reserva();
-        // Asumiendo que el Request DTO tiene los campos necesarios
         reserva.setFecha(request.getFechaReserva());
         reserva.setMotivo(request.getMotivo());
         reserva.setNumeroAsistentes(request.getNumeroAsistentes());
         reserva.setAula(aula);
         reserva.setHorario(horario);
-        reserva.setUsuario(usuario); // Asumiendo Usuario
+        reserva.setUsuario(usuario);
         reserva.setFechaCreacion(LocalDate.now());
+
+        return toDTO(reservaRepo.save(reserva));
+    }
+
+    // 👇 MÉTODO NUEVO PARA ACTUALIZAR 👇
+    @Transactional
+    public ReservaDTO actualizarReserva(Long id, ReservaRequest request, String emailUsuario) {
+        // 1. Buscar la reserva existente
+        Reserva reserva = reservaRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Reserva no encontrada con ID: " + id));
+
+        // 3. Validar Fecha (si se cambia)
+        if (request.getFechaReserva().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("La nueva fecha no puede estar en el pasado");
+        }
+
+        // 4. Obtener nuevas entidades
+        Aula aulaNueva = aulaService.obtenerEntidadPorId(request.getAulaId())
+                .orElseThrow(() -> new IllegalArgumentException("Aula no encontrada"));
+
+        Horario horarioNuevo = horarioService.obtenerEntidadPorId(request.getHorarioId())
+                .orElseThrow(() -> new IllegalArgumentException("Horario no encontrado"));
+
+        // 5. Validar Capacidad Nueva
+        if (request.getNumeroAsistentes() > aulaNueva.getCapacidad()) {
+            throw new IllegalArgumentException("El aforo supera la capacidad del aula nueva");
+        }
+
+        // 6. Validar Solapamiento (CRÍTICO: Solo si cambia Aula, Fecha u Horario)
+        boolean haCambiadoLugarOTiempo =
+                !reserva.getAula().getId().equals(request.getAulaId()) ||
+                        !reserva.getFecha().isEqual(request.getFechaReserva()) ||
+                        !reserva.getHorario().getId().equals(request.getHorarioId());
+
+        if (haCambiadoLugarOTiempo) {
+            boolean existeOcupacion = reservaRepo.existsByAulaIdAndFechaAndHorarioId(
+                    request.getAulaId(),
+                    request.getFechaReserva(),
+                    request.getHorarioId()
+            );
+
+            if (existeOcupacion) {
+                throw new IllegalStateException("El hueco al que intentas mover la reserva ya está ocupado");
+            }
+        }
+
+        // 7. Actualizar datos
+        reserva.setFecha(request.getFechaReserva());
+        reserva.setMotivo(request.getMotivo());
+        reserva.setNumeroAsistentes(request.getNumeroAsistentes());
+        reserva.setAula(aulaNueva);
+        reserva.setHorario(horarioNuevo);
+
+        // No cambiamos el Usuario ni la Fecha de Creación
 
         return toDTO(reservaRepo.save(reserva));
     }

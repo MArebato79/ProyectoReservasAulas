@@ -2,6 +2,7 @@ import {ajustarPermisosVisuales, mostrar, pintarReservas, updateAuthStatus} from
 import  {authenticatedFetch} from "./fecths.js";
 import {DOM} from "./document.js";
 
+let idReservaEditando = null;
 
 async function login(e){
     e.preventDefault();
@@ -202,3 +203,74 @@ function parseJwt (token) {
 }
 
 ajustarPermisosVisuales();
+
+window.cargarDatosParaEditar = function(reservaString) {
+    // El truco: pasamos el objeto entero convertido a texto y lo parseamos
+    // (Ojo: decodeURIComponent es necesario si pasas strings complejos en el HTML)
+    const reserva = JSON.parse(decodeURIComponent(reservaString));
+
+    // 1. Rellenamos los inputs con los datos de la reserva
+    DOM.reserva.fecha.value = reserva.fechaReserva;
+    DOM.reserva.motivo.value = reserva.motivo;
+    DOM.reserva.asistentes.value = reserva.numeroAsistentes; // Revisa si tu DTO se llama numeroAsistentes
+
+    // Estos son selects/inputs de ID. Asumimos que el DTO trae los IDs dentro de objetos aula/horario
+    // Si tu DTO devuelve el objeto entero, accede a .id
+    DOM.reserva.aulaId.value = reserva.aula.id;
+    DOM.reserva.horarioId.value = reserva.horario.id;
+    // DOM.reserva.usuarioId.value = ... (Normalmente el usuario no se edita)
+
+    // 2. Cambiamos los botones
+    DOM.botones.btnCrearReserva.style.display = 'none';
+    document.getElementById('btn-editarReserva').style.display = 'inline-block';
+    document.getElementById('btn-cancelarEdicion').style.display = 'inline-block';
+
+    // 3. Guardamos el ID globalmente
+    idReservaEditando = reserva.id;
+
+    // Scroll hacia arriba para ver el formulario
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+function cancelarEdicion() {
+    idReservaEditando = null;
+    // Limpiar formulario (puedes hacer una función limpiarFormulario() aparte)
+    DOM.reserva.motivo.value = "";
+    // ... limpiar resto ...
+
+    // Restaurar botones
+    DOM.botones.btnCrearReserva.style.display = 'inline-block';
+    document.getElementById('btn-editarReserva').style.display = 'none';
+    document.getElementById('btn-cancelarEdicion').style.display = 'none';
+}
+// Añade el listener:
+document.getElementById('btn-cancelarEdicion').addEventListener('click', cancelarEdicion);
+
+async function guardarCambiosReserva() {
+    if (!idReservaEditando) return;
+
+    // Recogemos datos igual que en crear
+    const aulaId = parseInt(DOM.reserva.aulaId.value, 10);
+    const horarioId = parseInt(DOM.reserva.horarioId.value, 10);
+    const asistentes = parseInt(DOM.reserva.asistentes.value, 10);
+    const fecha = DOM.reserva.fecha.value;
+    const motivo = DOM.reserva.motivo.value;
+
+    try {
+        // 👇 CAMBIO CLAVE: Usamos PUT y la URL con el ID
+        const datos = await authenticatedFetch(`/reservas/${idReservaEditando}`, 'PUT', {
+            aulaId, horarioId, asistentes, fecha, motivo
+        });
+
+        if (datos && !datos.error) {
+            mostrar({ mensaje: 'Reserva actualizada correctamente' });
+            cancelarEdicion(); // Limpia y restaura botones
+            cargarReservas();  // Recarga la lista para ver cambios
+        } else {
+            mostrar({ error: 'No se pudo actualizar' });
+        }
+    } catch (err) {
+        mostrar({ error: err });
+    }
+}
+document.getElementById('btn-editarReserva').addEventListener('click', guardarCambiosReserva);
