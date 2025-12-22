@@ -244,7 +244,7 @@ function cancelarEdicion() {
     document.getElementById('btn-cancelarEdicion').style.display = 'none';
 }
 // Añade el listener:
-document.getElementById('btn-cancelarEdicion').addEventListener('click', cancelarEdicion);
+window.document.getElementById('btn-cancelarEdicion').addEventListener('click', cancelarEdicion);
 
 async function guardarCambiosReserva() {
     if (!idReservaEditando) return;
