@@ -128,3 +128,77 @@ export function pintarReservas(listaReservas) {
 
     contenedor.innerHTML = html;
 }
+
+export function pintarAulas(listaAulas) {
+
+    if (!Array.isArray(listaAulas)|| listaAulas.length === 0) {
+        contenedor.innerHTML = '<p style="color: #c0392b;font-weight: bold">No hay Aulas para mostrar</p>';
+        return;
+    }
+
+
+    const html = listaAulas.map(aula => {
+
+        const {id,nombre,capacidad,esAuladeOrdenadores,numeroOrdenadores} = aula;
+        const aulaString =encodeURIComponent(JSON.stringify(aula))
+
+        const checkVisual = esAuladeOrdenadores ? '✅ Sí' : '❌ No';
+
+        const lineaOrdenadores = esAuladeOrdenadores
+            ? `<p><strong>💻 Ordenadores:</strong> ${numeroOrdenadores}</p>`
+            : '';
+        return `
+           <div class="card-reserva">
+                <h3>${nombre}</h3>
+                
+                <p><strong>👥 Capacidad:</strong> ${capacidad} personas</p>
+                
+                <p><strong>🖥️ ¿Tiene Ordenadores?:</strong> ${checkVisual}</p>
+                
+                ${lineaOrdenadores}
+
+                <div class="acciones">
+                    <button onclick="cargarAulaParaEditar('${aulaString}')" style="background-color: #f39c12;">✏️ Editar</button>
+                    <button onclick="borrarAula(event, ${id})" style="background-color: #e74c3c;">🗑️ Eliminar</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    contenedor.innerHTML = html;
+}
+
+export function pintarHorarios(listaHorarios) {
+
+    if (!Array.isArray(listaHorarios)|| listaHorarios.length === 0) {
+        contenedor.innerHTML = '<p style="color: #c0392b;font-weight: bold">No hay Horarios para mostrar</p>';
+        return;
+    }
+
+    const html = listaHorarios.map(horario=> {
+
+        const {id,dia,sesionDia,tipo,horaInicio,horaFim} = horario;
+        const horarioString =encodeURIComponent(JSON.stringify(horario))
+
+        return `
+           <div class="card-reserva">
+                <h3>${id}</h3>
+                
+                <p><strong>Día</strong>:</strong> ${dia}</p>
+                   
+                <p><strong>Sesión del dia</strong>:</strong> ${sesionDia}</p>
+                <p><strong>Tipo</strong>:</strong> ${tipo}</p>
+                
+                <p><strong>Hora de Inicio</strong>:</strong> ${horaInicio}</p>
+                <p><strong>Hora de Fin</strong>:</strong> ${horaFim}</p>
+                <div class="acciones">
+                    <button onclick="cargarAulaParaEditar('${horarioString}')" style="background-color: #f39c12;">✏️ Editar</button>
+                    <button onclick="borrarAula(event, ${id})" style="background-color: #e74c3c;">🗑️ Eliminar</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    contenedor.innerHTML = html;
+}
+
