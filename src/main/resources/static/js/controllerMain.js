@@ -1,8 +1,9 @@
-import {ajustarPermisosVisuales, mostrar, pintarReservas, updateAuthStatus} from "./vista.js";
+import {ajustarPermisosVisuales, mostrar, pintarAulas, pintarReservas, updateAuthStatus} from "./vista.js";
 import  {authenticatedFetch} from "./api.js";
 import {DOM} from "./document.js";
 
 let idReservaEditando = null;
+let idAulaEditando = null;
 
 async function login(e){
     e.preventDefault();
@@ -65,16 +66,132 @@ async function register(e,role){
     }
 }
 
-async function cargarAulas(){
+async function cargarAulas() {
     const datos = await authenticatedFetch('/aulas');
 
-    if(datos && !datos.error){
-        mostrar({datos});
-    }else{
-        mostrar({mensaje:'cargado de aulas interrumpido'});
+    if (datos && !datos.error) {
+        pintarAulas(datos);
+    } else {
+        mostrar({ error: 'Error cargando aulas' });
     }
 }
 
+// 2. BORRAR AULA
+// ------------------------------------------
+window.borrarAula = async function(event, id) {
+    event.stopPropagation(); // Evita clics fantasma
+
+    const confirmacion = await Swal.fire({
+        title: '¿Seguro?',
+        text: "No podrás deshacer esta acción",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, borrar'
+    });
+
+    if (confirmacion.isConfirmed) {
+        try {
+            const respuesta = await authenticatedFetch(`/aulas/${id}`, 'DELETE');
+            if (respuesta.success || !respuesta.error) {
+                mostrar({ mensaje: 'Aula eliminada' });
+                cargarAulas(); // Recargar la lista
+            } else {
+                mostrar({ error: 'No se pudo eliminar el aula' });
+            }
+        } catch (e) {
+            mostrar({ error: 'Error de red' });
+        }
+    }
+};
+
+window.cargarAulaParaEditar = function(aulaString) {
+    try {
+        const aula = JSON.parse(decodeURIComponent(aulaString));
+        idAulaEditando = aula.id;
+
+        // Rellenamos el formulario (Asegúrate que los IDs coinciden con tu HTML)
+        DOM.aula.nombre.value = aula.nombre;
+        DOM.aula.capacidad.value = aula.capacidad;
+
+        // Checkbox: Si es true lo marcamos, si no lo desmarcamos
+        if(DOM.aula.esOrdenadores) {
+            DOM.aula.esOrdenadores.checked = aula.esAuladeOrdenadores;
+
+            // Disparamos el evento 'change' manualmente por si tienes lógica que muestra/oculta el input de número de PCs
+            DOM.aula.esOrdenadores.dispatchEvent(new Event('change'));
+        }
+
+        if(DOM.aula.numOrdenadores) {
+            DOM.aula.numOrdenadores.value = aula.numeroOrdenadores || 0;
+        }
+
+        // Cambiar botones (Ocultar Crear -> Mostrar Guardar)
+        // (Asume que tienes botones con estos IDs en tu HTML del dashboard)
+        const btnCrear = document.getElementById('btn-crearAula');
+        const btnEditar = document.getElementById('btn-editarAula');
+        const btnCancelar = document.getElementById('btn-cancelarAula');
+
+        if(btnCrear) btnCrear.style.display = 'none';
+        if(btnEditar) btnEditar.style.display = 'inline-block';
+        if(btnCancelar) btnCancelar.style.display = 'inline-block';
+
+        mostrar({ mensaje: 'Modo Edición: Modifica el Aula' });
+
+    } catch (e) {
+        console.error(e);
+        mostrar({ error: 'Error al cargar aula' });
+    }
+};
+
+async function guardarCambiosAula() {
+    if (!idAulaEditando) return;
+
+    // Recoger datos
+    const nombre = DOM.aula.nombre.value;
+    const capacidad = parseInt(DOM.aula.capacidad.value);
+    const esAuladeOrdenadores = DOM.aula.esOrdenadores ? DOM.aula.esOrdenadores.checked : false;
+    const numeroOrdenadores = esAuladeOrdenadores ? parseInt(DOM.aula.numOrdenadores.value) : 0;
+
+    try {
+        const datos = await authenticatedFetch(`/aulas/${idAulaEditando}`, 'PUT', {
+            nombre,
+            capacidad,
+            esAuladeOrdenadores,
+            numeroOrdenadores
+        });
+
+        if (datos && !datos.error) {
+            mostrar({ mensaje: '✅ Aula actualizada' });
+            cargarAulas();     // Refrescar lista
+            cancelarEdicionAula(); // Limpiar formulario
+        } else {
+            mostrar({ error: 'No se pudo actualizar' });
+        }
+
+    } catch (e) {
+        mostrar({ error: e });
+    }
+}
+function cancelarEdicionAula() {
+    idAulaEditando = null;
+
+    // Limpiar form
+    DOM.aula.nombre.value = "";
+    DOM.aula.capacidad.value = "";
+    if(DOM.aula.esOrdenadores) DOM.aula.esOrdenadores.checked = false;
+    if(DOM.aula.numOrdenadores) DOM.aula.numOrdenadores.value = "";
+
+    // Restaurar botones
+    const btnCrear = document.getElementById('btn-crearAula');
+    const btnEditar = document.getElementById('btn-editarAula');
+    const btnCancelar = document.getElementById('btn-cancelarAula');
+
+    if(btnCrear) btnCrear.style.display = 'inline-block';
+    if(btnEditar) btnEditar.style.display = 'none';
+    if(btnCancelar) btnCancelar.style.display = 'none';
+}
 async function cargarHorarios(){
     const datos = await authenticatedFetch('/horarios');
 
@@ -224,6 +341,16 @@ window.cargarDatosParaEditar = function(reservaString) {
     DOM.botones.btnCrearReserva.style.display = 'none';
     document.getElementById('btn-editarReserva').style.display = 'inline-block';
     document.getElementById('btn-cancelarEdicion').style.display = 'inline-block';
+
+    const btnEditarAula = document.getElementById('btn-editarAula');
+    const btnCancelarAula = document.getElementById('btn-cancelarAula');
+
+    if(btnEditarAula) btnEditarAula.addEventListener('click', guardarCambiosAula);
+    if(btnCancelarAula) btnCancelarAula.addEventListener('click', cancelarEdicionAula);
+
+// También conecta el botón de "Cargar Aulas" de tu barra de navegación nueva
+    const btnCargarAulas = document.getElementById('btn-cargarAulas');
+    if(btnCargarAulas) btnCargarAulas.addEventListener('click', cargarAulas);
 
     // 3. Guardamos el ID globalmente
     idReservaEditando = reserva.id;
