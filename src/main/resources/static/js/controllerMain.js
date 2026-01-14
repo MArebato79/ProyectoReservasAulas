@@ -1,405 +1,367 @@
-import {ajustarPermisosVisuales, mostrar, pintarAulas, pintarReservas, updateAuthStatus} from "./vista.js";
-import  {authenticatedFetch} from "./api.js";
-import {DOM} from "./document.js";
+import { authenticatedFetch } from "./api.js";
+import { DOM } from "./document.js";
+import { mostrar, pintarReservas, pintarAulas, pintarHorarios, updateAuthStatus } from "./vista.js";
 
+// ======================================================
+// 1. ESTADO GLOBAL Y VARIABLES
+// ======================================================
 let idReservaEditando = null;
 let idAulaEditando = null;
 let idHorarioEditando = null;
+let todasLasReservas = []; // Caché para el buscador
 
-async function login(e){
+// ======================================================
+// 2. AUTENTICACIÓN (LOGIN / REGISTER / LOGOUT)
+// ======================================================
+
+async function login(e) {
     e.preventDefault();
-
-    const email = DOM.auth.email.value;
-    const pass = DOM.auth.password.value;
-
+    // Limpiamos tokens antiguos para evitar conflictos
     localStorage.removeItem('jwtToken');
     localStorage.removeItem('userRole');
 
-    try{
-        const datos = await authenticatedFetch('/auth/login','POST',{email:email,password:pass});
-
-        if(datos && datos.token){
-            localStorage.setItem('jwtToken',datos.token);
-
-            const rolUsuario = payload.role || payload.roles || 'USER';
-            localStorage.setItem('userRole', rolUsuario);
-            updateAuthStatus();
-
-            mostrar({mensaje:'login Correctamente.'});
-        }else{
-           mostrar({mensaje:'login incorrecto'});
-        }
-
-    }catch(err){
-        alert(err);
-    }
-}
-
-async function logout(){
-    localStorage.removeItem('token');
-    updateAuthStatus();
-    DOM.elementos.contenedor.innerHTML='<p>Sesión cerrada</p>'
-}
-
-async function register(e,role){
-    e.preventDefault();
-
     const email = DOM.auth.email.value;
-    const pass = DOM.auth.password.value;
-
-    if (!email || !pass) {
-        mostrar({mensaje:'introduzca email y contraseña'});
-        return;
-    }
-
-    const endpoint = role === 'admin' ? '/auth/register/admin' : '/auth/register';
-
-    try{
-        const datos = await authenticatedFetch(endpoint,'POST',{email:email,password:pass});
-
-        if(datos && !datos.error){
-            mostrar({mensaje:'Registro completado'});
-        }else{
-            mostrar({mensaje:'Registro incorrecto'});
-        }
-    }catch (error){
-        mostrar({error:`Error al registrar ${error}`});
-    }
-}
-
-async function cargarAulas() {
-    const datos = await authenticatedFetch('/aulas');
-
-    if (datos && !datos.error) {
-        pintarAulas(datos);
-    } else {
-        mostrar({ error: 'Error cargando aulas' });
-    }
-}
-
-// 2. BORRAR AULA
-// ------------------------------------------
-window.borrarAula = async function(event, id) {
-    event.stopPropagation(); // Evita clics fantasma
-
-    const confirmacion = await Swal.fire({
-        title: '¿Seguro?',
-        text: "No podrás deshacer esta acción",
-        icon: 'warning',
-        showCancelButton: true,
-
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Sí, borrar'
-    });
-
-    if (confirmacion.isConfirmed) {
-        try {
-            const respuesta = await authenticatedFetch(`/aulas/${id}`, 'DELETE');
-            if (respuesta.success || !respuesta.error) {
-                mostrar({ mensaje: 'Aula eliminada' });
-                cargarAulas(); // Recargar la lista
-            } else {
-                mostrar({ error: 'No se pudo eliminar el aula' });
-            }
-        } catch (e) {
-            mostrar({ error: 'Error de red' });
-        }
-    }
-};
-
-window.cargarAulaParaEditar = function(aulaString) {
-    try {
-        const aula = JSON.parse(decodeURIComponent(aulaString));
-        idAulaEditando = aula.id;
-
-        // Rellenamos el formulario (Asegúrate que los IDs coinciden con tu HTML)
-        DOM.aula.nombre.value = aula.nombre;
-        DOM.aula.capacidad.value = aula.capacidad;
-
-        // Checkbox: Si es true lo marcamos, si no lo desmarcamos
-        if(DOM.aula.esOrdenadores) {
-            DOM.aula.esOrdenadores.checked = aula.esAuladeOrdenadores;
-
-            // Disparamos el evento 'change' manualmente por si tienes lógica que muestra/oculta el input de número de PCs
-            DOM.aula.esOrdenadores.dispatchEvent(new Event('change'));
-        }
-
-        if(DOM.aula.numOrdenadores) {
-            DOM.aula.numOrdenadores.value = aula.numeroOrdenadores || 0;
-        }
-
-        // Cambiar botones (Ocultar Crear -> Mostrar Guardar)
-        // (Asume que tienes botones con estos IDs en tu HTML del dashboard)
-        const btnCrear = document.getElementById('btn-crearAula');
-        const btnEditar = document.getElementById('btn-editarAula');
-        const btnCancelar = document.getElementById('btn-cancelarAula');
-
-        if(btnCrear) btnCrear.style.display = 'none';
-        if(btnEditar) btnEditar.style.display = 'inline-block';
-        if(btnCancelar) btnCancelar.style.display = 'inline-block';
-
-        mostrar({ mensaje: 'Modo Edición: Modifica el Aula' });
-
-    } catch (e) {
-        console.error(e);
-        mostrar({ error: 'Error al cargar aula' });
-    }
-};
-
-async function guardarCambiosAula() {
-    if (!idAulaEditando) return;
-
-    // Recoger datos
-    const nombre = DOM.aula.nombre.value;
-    const capacidad = parseInt(DOM.aula.capacidad.value);
-    const esAuladeOrdenadores = DOM.aula.esOrdenadores ? DOM.aula.esOrdenadores.checked : false;
-    const numeroOrdenadores = esAuladeOrdenadores ? parseInt(DOM.aula.numOrdenadores.value) : 0;
+    const password = DOM.auth.password.value;
 
     try {
-        const datos = await authenticatedFetch(`/aulas/${idAulaEditando}`, 'PUT', {
-            nombre,
-            capacidad,
-            esAuladeOrdenadores,
-            numeroOrdenadores
-        });
+        const datos = await authenticatedFetch('/auth/login', 'POST', { email, password });
 
-        if (datos && !datos.error) {
-            mostrar({ mensaje: '✅ Aula actualizada' });
-            cargarAulas();     // Refrescar lista
-            cancelarEdicionAula(); // Limpiar formulario
+        if (datos && datos.token) {
+            localStorage.setItem('jwtToken', datos.token);
+
+            // Decodificamos el rol (Opcional si usas la función parseJwt)
+            // const payload = parseJwt(datos.token);
+            // localStorage.setItem('userRole', payload.role);
+
+            updateAuthStatus();
+            mostrar({ mensaje: 'Login correcto' });
+
+            // Carga inicial de datos
+            cargarReservas();
         } else {
-            mostrar({ error: 'No se pudo actualizar' });
-        }
-
-    } catch (e) {
-        mostrar({ error: e });
-    }
-}
-function cancelarEdicionAula() {
-    idAulaEditando = null;
-
-    // Limpiar form
-    DOM.aula.nombre.value = "";
-    DOM.aula.capacidad.value = "";
-    if(DOM.aula.esOrdenadores) DOM.aula.esOrdenadores.checked = false;
-    if(DOM.aula.numOrdenadores) DOM.aula.numOrdenadores.value = "";
-
-    // Restaurar botones
-    const btnCrear = document.getElementById('btn-crearAula');
-    const btnEditar = document.getElementById('btn-editarAula');
-    const btnCancelar = document.getElementById('btn-cancelarAula');
-
-    if(btnCrear) btnCrear.style.display = 'inline-block';
-    if(btnEditar) btnEditar.style.display = 'none';
-    if(btnCancelar) btnCancelar.style.display = 'none';
-}
-async function cargarHorarios(){
-    const datos = await authenticatedFetch('/horarios');
-
-    if(datos && !datos.error){
-        mostrar({datos});
-    }else{
-        mostrar({mensaje:'cargado de horarios interrumpido'});
-    }
-}
-
-async function cargarReservas(){
-    const datos = await authenticatedFetch('/reservas');
-
-    if(datos && !datos.error){
-        mostrar({datos});
-        pintarReservas(datos)
-    }else{
-        mostrar({mensaje:'cargado de reservas interrumpido'});
-    }
-}
-DOM.botones.btnRegisterAdmin.addEventListener('click', (e) => register(e,'admin'));
-DOM.botones.btnRegisterProfe.addEventListener('click', (e) => register(e,'profe'));
-DOM.botones.btnLogin.addEventListener('click',login);
-DOM.botones.btnLogout.addEventListener('click',logout);
-DOM.botones.btnVerAulas.addEventListener('click', cargarAulas);
-DOM.botones.btnVerHorarios.addEventListener('click', cargarHorarios);
-DOM.botones.btnVerReservas.addEventListener('click', cargarReservas);
-
-async function crearAulas() {
-    const nombre = DOM.aula.nombre.value;
-    const capacidad = parseInt(DOM.aula.capacidad.value,10);
-    const esOrdenadores = DOM.aula.esOrdenadores.checked;
-    const numOrdenadores = parseInt(DOM.aula.numOrdenadores.value,10);
-
-    try{
-        const datos =  await authenticatedFetch('/aulas','POST',{nombre,capacidad,esOrdenadores,numOrdenadores});
-
-        if(datos && !datos.error){
-            mostrar({datos});
-        }else{
-            mostrar({mensaje:'cargado de aulas interrumpido'});
-        }
-    }catch(err){
-        mostrar({error:err});
-    }
-}
-
-async function crearHorarios() {
-    const dia = DOM.horario.dia.value;
-    const tipo = DOM.horario.tipo.value;
-    const sesion = parseInt(DOM.horario.sesion.value,10);
-    const horaInicio = DOM.horario.inicio.value;
-    const horaFin = DOM.horario.fin.value;
-
-    try{
-        const datos =  await authenticatedFetch('/horarios','POST',{dia,tipo,sesion,horaInicio,horaFin});
-
-        if(datos && !datos.error){
-            mostrar({datos});
-        }else{
-            mostrar({mensaje:'cargado de aulas interrumpido'});
-        }
-    }catch(err){
-        mostrar({error:err});
-    }
-}
-
-async function crearReservas(){
-    const aulaId = parseInt(DOM.reserva.aulaId.value, 10);
-    const horarioId = parseInt(DOM.reserva.horarioId.value, 10);
-    const usuarioId = parseInt(DOM.reserva.usuarioId.value, 10); // NOTA: Normalmente el usuario se saca del Token en el backend
-    const asistentes = parseInt(DOM.reserva.asistentes.value, 10);
-
-    try{
-        const datos =  await authenticatedFetch('/reservas','POST',{aulaId,horarioId,usuarioId,asistentes});
-
-        if(datos && !datos.error){
-            mostrar({datos});
-            pintarReservas(datos);
-        }else {
-            mostrar({mensaje:'creacion de reserva interrumpido'});
-        }
-
-    }catch (err){
-        mostrar({error:err});
-    }
-}
-
-async function borrarReserva(e,id){
-    e.preventDefault();
-
-    const tarjeta = e.target.closest('.card-reserva') || e.target.parentElement;
-    try{
-        const datos = await authenticatedFetch(`/reservas/${id}`,'DELETE',{id});
-        if(datos && !datos.error){
-            mostrar({mensaje:'Reserva borrada',datos:datos});
-
-            if (tarjeta){
-                tarjeta.remove();
-            }
-        }else{
-            mostrar({mensaje:'Problema al borrar'});
-        }
-    }catch(err){
-        mostrar({error:err});
-    }
-}
-
-DOM.botones.btnCrearAula.addEventListener('click', crearAulas);
-DOM.botones.btnCrearHorario.addEventListener('click', crearHorarios);
-DOM.botones.btnCrearReserva.addEventListener('click', crearReservas);
-window.borrarReserva = borrarReserva;
-
-function parseJwt (token) {
-    try {
-        const base64Url = token.split('.')[1]; // Cogemos la parte 2 (Payload)
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-
-        return JSON.parse(jsonPayload); // Devuelve objeto JS (ej: {sub: "pepe", role: "ADMIN"})
-    } catch (e) {
-        return null;
-    }
-}
-
-ajustarPermisosVisuales();
-
-window.cargarDatosParaEditar = function(reservaString) {
-    // El truco: pasamos el objeto entero convertido a texto y lo parseamos
-    // (Ojo: decodeURIComponent es necesario si pasas strings complejos en el HTML)
-    const reserva = JSON.parse(decodeURIComponent(reservaString));
-
-    // 1. Rellenamos los inputs con los datos de la reserva
-    DOM.reserva.fecha.value = reserva.fechaReserva;
-    DOM.reserva.motivo.value = reserva.motivo;
-    DOM.reserva.asistentes.value = reserva.numeroAsistentes; // Revisa si tu DTO se llama numeroAsistentes
-
-    // Estos son selects/inputs de ID. Asumimos que el DTO trae los IDs dentro de objetos aula/horario
-    // Si tu DTO devuelve el objeto entero, accede a .id
-    DOM.reserva.aulaId.value = reserva.aula.id;
-    DOM.reserva.horarioId.value = reserva.horario.id;
-    // DOM.reserva.usuarioId.value = ... (Normalmente el usuario no se edita)
-
-    // 2. Cambiamos los botones
-    DOM.botones.btnCrearReserva.style.display = 'none';
-    document.getElementById('btn-editarReserva').style.display = 'inline-block';
-    document.getElementById('btn-cancelarEdicion').style.display = 'inline-block';
-
-    const btnEditarAula = document.getElementById('btn-editarAula');
-    const btnCancelarAula = document.getElementById('btn-cancelarAula');
-
-    if(btnEditarAula) btnEditarAula.addEventListener('click', guardarCambiosAula);
-    if(btnCancelarAula) btnCancelarAula.addEventListener('click', cancelarEdicionAula);
-
-// También conecta el botón de "Cargar Aulas" de tu barra de navegación nueva
-    const btnCargarAulas = document.getElementById('btn-cargarAulas');
-    if(btnCargarAulas) btnCargarAulas.addEventListener('click', cargarAulas);
-
-    // 3. Guardamos el ID globalmente
-    idReservaEditando = reserva.id;
-
-    // Scroll hacia arriba para ver el formulario
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-};
-
-function cancelarEdicion() {
-    idReservaEditando = null;
-    // Limpiar formulario (puedes hacer una función limpiarFormulario() aparte)
-    DOM.reserva.motivo.value = "";
-    // ... limpiar resto ...
-
-    // Restaurar botones
-    DOM.botones.btnCrearReserva.style.display = 'inline-block';
-    document.getElementById('btn-editarReserva').style.display = 'none';
-    document.getElementById('btn-cancelarEdicion').style.display = 'none';
-}
-// Añade el listener:
-window.document.getElementById('btn-cancelarEdicion').addEventListener('click', cancelarEdicion);
-
-async function guardarCambiosReserva() {
-    if (!idReservaEditando) return;
-
-    // Recogemos datos igual que en crear
-    const aulaId = parseInt(DOM.reserva.aulaId.value, 10);
-    const horarioId = parseInt(DOM.reserva.horarioId.value, 10);
-    const asistentes = parseInt(DOM.reserva.asistentes.value, 10);
-    const fecha = DOM.reserva.fecha.value;
-    const motivo = DOM.reserva.motivo.value;
-
-    try {
-        // 👇 CAMBIO CLAVE: Usamos PUT y la URL con el ID
-        const datos = await authenticatedFetch(`/reservas/${idReservaEditando}`, 'PUT', {
-            aulaId, horarioId, asistentes, fecha, motivo
-        });
-
-        if (datos && !datos.error) {
-            mostrar({ mensaje: 'Reserva actualizada correctamente' });
-            cancelarEdicion(); // Limpia y restaura botones
-            cargarReservas();  // Recarga la lista para ver cambios
-        } else {
-            mostrar({ error: 'No se pudo actualizar' });
+            mostrar({ error: 'Credenciales incorrectas' });
         }
     } catch (err) {
         mostrar({ error: err });
     }
 }
-window.document.getElementById('btn-editarReserva').addEventListener('click', guardarCambiosReserva);
+
+async function register(e) {
+    e.preventDefault();
+    const nombre = DOM.register.nombre.value;
+    const username = DOM.register.username.value;
+    const email = DOM.register.email.value;
+    const password = DOM.register.password.value;
+
+    try {
+        const datos = await authenticatedFetch('/auth/register', 'POST', { nombre, username, email, password });
+        if (datos && !datos.error) {
+            mostrar({ mensaje: 'Usuario registrado. Ahora haz login.' });
+        } else {
+            mostrar({ error: datos.error || 'Error en registro' });
+        }
+    } catch (err) {
+        mostrar({ error: err });
+    }
+}
+
+async function logout() {
+    localStorage.removeItem('jwtToken');
+    localStorage.removeItem('userRole');
+    updateAuthStatus();
+    mostrar({ mensaje: 'Sesión cerrada' });
+
+    // Limpiar pantalla
+    document.getElementById('output-reservas').innerHTML = '';
+}
+
+// ======================================================
+// 3. GESTIÓN DE RESERVAS
+// ======================================================
+
+async function cargarReservas() {
+    const datos = await authenticatedFetch('/reservas');
+    if (datos && !datos.error) {
+        todasLasReservas = datos; // Guardamos para el buscador
+        pintarReservas(datos);
+    } else {
+        mostrar({ error: 'Error cargando reservas' });
+    }
+}
+
+async function crearReserva() {
+    // Recogemos datos del DOM
+    const aulaId = parseInt(DOM.reserva.aulaId.value);
+    const horarioId = parseInt(DOM.reserva.horarioId.value);
+    const usuarioId = 1; // Ojo: Esto deberías sacarlo del token o del usuario logueado
+    const fecha = DOM.reserva.fecha.value;
+    const motivo = DOM.reserva.motivo.value;
+    const asistentes = parseInt(DOM.reserva.asistentes.value);
+
+    // Validaciones básicas
+    if (!aulaId || !horarioId || !fecha) {
+        mostrar({ error: 'Faltan datos obligatorios' });
+        return;
+    }
+
+    try {
+        const datos = await authenticatedFetch('/reservas', 'POST', {
+            aulaId, horarioId, usuarioId, fechaReserva: fecha, motivo, numeroAsistentes: asistentes
+        });
+
+        if (datos && !datos.error) {
+            mostrar({ mensaje: 'Reserva creada con éxito' });
+            cargarReservas();
+        } else {
+            mostrar({ error: datos.error || 'Error al crear reserva' });
+        }
+    } catch (err) {
+        mostrar({ error: err });
+    }
+}
+
+// Editar Reserva (Se llama desde el botón de la tarjeta)
+window.cargarDatosParaEditar = function(reservaString) {
+    try {
+        const reserva = JSON.parse(decodeURIComponent(reservaString));
+        idReservaEditando = reserva.id;
+
+        // Rellenar formulario
+        DOM.reserva.aulaId.value = reserva.aula.id;
+        DOM.reserva.horarioId.value = reserva.horario.id;
+        DOM.reserva.fecha.value = reserva.fechaReserva.substring(0, 10);
+        DOM.reserva.motivo.value = reserva.motivo;
+        DOM.reserva.asistentes.value = reserva.numeroAsistentes;
+
+        // Cambiar botones
+        toggleBotones('Reserva', true); // Función auxiliar abajo
+        mostrar({ mensaje: 'Editando Reserva...' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) { console.error(e); }
+};
+
+async function guardarCambiosReserva() {
+    if (!idReservaEditando) return;
+
+    // Recoger datos (Misma lógica que crear)
+    const aulaId = parseInt(DOM.reserva.aulaId.value);
+    const horarioId = parseInt(DOM.reserva.horarioId.value);
+    const fecha = DOM.reserva.fecha.value;
+    const motivo = DOM.reserva.motivo.value;
+    const asistentes = parseInt(DOM.reserva.asistentes.value);
+
+    try {
+        const res = await authenticatedFetch(`/reservas/${idReservaEditando}`, 'PUT', {
+            aulaId, horarioId, fechaReserva: fecha, motivo, numeroAsistentes: asistentes
+        });
+        if (res && !res.error) {
+            mostrar({ mensaje: '✅ Reserva actualizada' });
+            cargarReservas();
+            cancelarEdicionReserva();
+        } else {
+            mostrar({ error: res.error });
+        }
+    } catch (e) { mostrar({ error: e }); }
+}
+
+function cancelarEdicionReserva() {
+    idReservaEditando = null;
+    DOM.reserva.motivo.value = ""; // Limpiar campos clave
+    DOM.reserva.asistentes.value = "";
+    toggleBotones('Reserva', false);
+}
+
+window.borrarReserva = async function(event, id) {
+    if(await confirmarBorrado()) {
+        const res = await authenticatedFetch(`/reservas/${id}`, 'DELETE');
+        if(!res.error) { mostrar({mensaje:'Eliminado'}); cargarReservas(); }
+    }
+};
+
+// ======================================================
+// 4. GESTIÓN DE AULAS
+// ======================================================
+
+async function cargarAulas() {
+    const datos = await authenticatedFetch('/aulas');
+    if (datos && !datos.error) pintarAulas(datos);
+}
+
+// Editar Aula
+window.cargarAulaParaEditar = function(aulaString) {
+    const aula = JSON.parse(decodeURIComponent(aulaString));
+    idAulaEditando = aula.id;
+
+    DOM.aula.nombre.value = aula.nombre;
+    DOM.aula.capacidad.value = aula.capacidad;
+    if(DOM.aula.esOrdenadores) {
+        DOM.aula.esOrdenadores.checked = aula.esAuladeOrdenadores;
+        // Forzar evento change por si tienes lógica visual de ocultar input PCs
+        DOM.aula.esOrdenadores.dispatchEvent(new Event('change'));
+    }
+    if(DOM.aula.numOrdenadores) DOM.aula.numOrdenadores.value = aula.numeroOrdenadores;
+
+    toggleBotones('Aula', true);
+};
+
+async function guardarCambiosAula() {
+    if (!idAulaEditando) return;
+    const nombre = DOM.aula.nombre.value;
+    const capacidad = DOM.aula.capacidad.value;
+    const esAuladeOrdenadores = DOM.aula.esOrdenadores ? DOM.aula.esOrdenadores.checked : false;
+    const numeroOrdenadores = esAuladeOrdenadores ? DOM.aula.numOrdenadores.value : 0;
+
+    const res = await authenticatedFetch(`/aulas/${idAulaEditando}`, 'PUT', { nombre, capacidad, esAuladeOrdenadores, numeroOrdenadores });
+    if(res && !res.error) {
+        mostrar({ mensaje: 'Aula actualizada' });
+        cargarAulas();
+        cancelarEdicionAula();
+    }
+}
+
+function cancelarEdicionAula() {
+    idAulaEditando = null;
+    DOM.aula.nombre.value = "";
+    DOM.aula.capacidad.value = "";
+    if(DOM.aula.esOrdenadores) DOM.aula.esOrdenadores.checked = false;
+    toggleBotones('Aula', false);
+}
+
+window.borrarAula = async function(event, id) {
+    if(await confirmarBorrado()) {
+        const res = await authenticatedFetch(`/aulas/${id}`, 'DELETE');
+        if(!res.error) { mostrar({mensaje:'Aula eliminada'}); cargarAulas(); }
+    }
+};
+
+// ======================================================
+// 5. GESTIÓN DE HORARIOS
+// ======================================================
+
+async function cargarHorarios() {
+    const datos = await authenticatedFetch('/horarios');
+    if (datos && !datos.error) pintarHorarios(datos);
+}
+
+window.cargarHorarioParaEditar = function(horarioString) {
+    const horario = JSON.parse(decodeURIComponent(horarioString));
+    idHorarioEditando = horario.id;
+
+    DOM.horario.dia.value = horario.diaSemana;
+    DOM.horario.inicio.value = horario.horaInicio;
+    DOM.horario.fin.value = horario.horaFin;
+
+    toggleBotones('Horario', true);
+};
+
+async function guardarCambiosHorario() {
+    if (!idHorarioEditando) return;
+    const diaSemana = DOM.horario.dia.value;
+    const horaInicio = DOM.horario.inicio.value;
+    const horaFin = DOM.horario.fin.value;
+
+    const res = await authenticatedFetch(`/horarios/${idHorarioEditando}`, 'PUT', { diaSemana, horaInicio, horaFin });
+    if(res && !res.error) {
+        mostrar({ mensaje: 'Horario actualizado' });
+        cargarHorarios();
+        cancelarEdicionHorario();
+    }
+}
+
+function cancelarEdicionHorario() {
+    idHorarioEditando = null;
+    DOM.horario.dia.value = "";
+    DOM.horario.inicio.value = "";
+    toggleBotones('Horario', false);
+}
+
+window.borrarHorario = async function(event, id) {
+    if(await confirmarBorrado()) {
+        const res = await authenticatedFetch(`/horarios/${id}`, 'DELETE');
+        if(!res.error) { mostrar({mensaje:'Horario eliminado'}); cargarHorarios(); }
+    }
+};
+
+
+// ======================================================
+// 6. UTILIDADES Y EVENT LISTENERS
+// ======================================================
+
+// Función auxiliar para confirmar borrados
+async function confirmarBorrado() {
+    const result = await Swal.fire({
+        title: '¿Estás seguro?', text: "No podrás deshacer esto", icon: 'warning',
+        showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, borrar'
+    });
+    return result.isConfirmed;
+}
+
+// Función auxiliar para cambiar botones (Crear <-> Editar/Cancelar)
+// Tipo puede ser 'Reserva', 'Aula', 'Horario'
+function toggleBotones(tipo, modoEdicion) {
+    const btnCrear = document.getElementById(`btn-crear${tipo}`);
+    const btnEditar = document.getElementById(`btn-editar${tipo}`); // ID debe ser btn-editarReserva, btn-editarAula...
+    const btnCancelar = document.getElementById(`btn-cancelar${tipo}`); // ID debe ser btn-cancelarReserva...
+
+    if (btnCrear) btnCrear.style.display = modoEdicion ? 'none' : 'inline-block';
+    if (btnEditar) btnEditar.style.display = modoEdicion ? 'inline-block' : 'none';
+    if (btnCancelar) btnCancelar.style.display = modoEdicion ? 'inline-block' : 'none';
+}
+
+
+// --- INICIALIZACIÓN DE EVENTOS ---
+
+// Auth
+if(DOM.botones.btnLogin) DOM.botones.btnLogin.addEventListener('click', login);
+if(DOM.botones.btnRegister) DOM.botones.btnRegister.addEventListener('click', register);
+if(DOM.botones.btnLogout) DOM.botones.btnLogout.addEventListener('click', logout);
+
+// Navegación (Botones de la barra derecha)
+const btnVerAulas = document.getElementById('btn-cargarAulas');
+const btnVerHorarios = document.getElementById('btn-cargarHorarios');
+const btnVerReservas = document.getElementById('btn-cargarReservas');
+
+if(btnVerAulas) btnVerAulas.addEventListener('click', cargarAulas);
+if(btnVerHorarios) btnVerHorarios.addEventListener('click', cargarHorarios);
+if(btnVerReservas) btnVerReservas.addEventListener('click', cargarReservas);
+
+// Crear
+if(DOM.botones.btnCrearReserva) DOM.botones.btnCrearReserva.addEventListener('click', crearReserva);
+// Añade aquí los listeners de crearAula y crearHorario si tienes los botones en el DOM.document
+// Ejemplo: if(document.getElementById('btn-crearAula')) ...
+
+// Editar / Cancelar (Reservas)
+const btnEditRes = document.getElementById('btn-editarReserva');
+const btnCancelRes = document.getElementById('btn-cancelarReserva');
+if(btnEditRes) btnEditRes.addEventListener('click', guardarCambiosReserva);
+if(btnCancelRes) btnCancelRes.addEventListener('click', cancelarEdicionReserva);
+
+// Editar / Cancelar (Aulas)
+const btnEditAula = document.getElementById('btn-editarAula');
+const btnCancelAula = document.getElementById('btn-cancelarAula');
+if(btnEditAula) btnEditAula.addEventListener('click', guardarCambiosAula);
+if(btnCancelAula) btnCancelAula.addEventListener('click', cancelarEdicionAula);
+
+// Editar / Cancelar (Horarios)
+const btnEditHorario = document.getElementById('btn-editarHorario');
+const btnCancelHorario = document.getElementById('btn-cancelarHorario');
+if(btnEditHorario) btnEditHorario.addEventListener('click', guardarCambiosHorario);
+if(btnCancelHorario) btnCancelHorario.addEventListener('click', cancelarEdicionHorario);
+
+
+// Buscador (Filtro en tiempo real)
+const inputBuscador = document.getElementById('input-buscador');
+if (inputBuscador) {
+    inputBuscador.addEventListener('input', (e) => {
+        const texto = e.target.value.toLowerCase();
+        const filtradas = todasLasReservas.filter(reserva => {
+            const motivo = reserva.motivo ? reserva.motivo.toLowerCase() : '';
+            const aula = reserva.aula && reserva.aula.nombre ? reserva.aula.nombre.toLowerCase() : '';
+            return motivo.includes(texto) || aula.includes(texto);
+        });
+        pintarReservas(filtradas);
+    });
+}
+
+// Ejecución inicial
+updateAuthStatus(); // Verificar si ya estamos logueados al recargar
