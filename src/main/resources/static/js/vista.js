@@ -58,9 +58,13 @@ export function updateAuthStatus() {
     const currentStatus = localStorage.getItem('jwtToken');
     if (currentStatus) {
         statusElement.textContent = 'Autenticado (Token presente)';
+        authDiv.classList.remove('noAutenticado');
+        authDiv.classList.add('autenticado')
         authDiv.className = 'success';
     } else {
         statusElement.textContent = 'No autenticado';
+        authDiv.classList.remove('autenticado')
+        authDiv.classList.add('noAutenticado');
         authDiv.className = 'error';
     }
 

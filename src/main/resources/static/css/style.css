@@ -6,6 +6,14 @@ input, select { margin: 3px; padding: 8px; border: 1px solid #ccc; border-radius
 section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 pre { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; overflow-x: auto; white-space: pre-wrap; }
 #estado-auth { padding: 10px; border-radius: 4px; margin-bottom: 15px; }
+.noAutenticado{
+    background-color: #d26565;
+    border: #e74c3c 4px solid;
+}
+.autenticado{
+    background-color: #bdec7e;
+    border: lawngreen 4px solid;
+}
 .success { background-color: #e8f9e8; color: #27ae60; border: 1px solid #27ae60; }
 .error { background-color: #fcebeb; color: #c0392b; border: 1px solid #c0392b; }
 #spinner-overlay {

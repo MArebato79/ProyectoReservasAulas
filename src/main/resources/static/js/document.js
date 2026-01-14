@@ -27,7 +27,7 @@ export const DOM = {
         fin: document.getElementById('horaFinHorario')
     },
 
-    // 📅 Reservas
+
     reserva: {
         aulaId: document.getElementById('idAulaReserva'),
         horarioId: document.getElementById('idHorarioReserva'),

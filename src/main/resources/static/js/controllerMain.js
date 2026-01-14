@@ -4,6 +4,7 @@ import {DOM} from "./document.js";
 
 let idReservaEditando = null;
 let idAulaEditando = null;
+let idHorarioEditando = null;
 
 async function login(e){
     e.preventDefault();
@@ -86,6 +87,7 @@ window.borrarAula = async function(event, id) {
         text: "No podrás deshacer esta acción",
         icon: 'warning',
         showCancelButton: true,
+
         confirmButtonColor: '#d33',
         cancelButtonColor: '#3085d6',
         confirmButtonText: 'Sí, borrar'
