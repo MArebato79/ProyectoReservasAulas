@@ -187,6 +187,47 @@ async function cargarAulas() {
     if (datos && !datos.error) pintarAulas(datos);
 }
 
+async function crearAula() {
+    // 1. Recoger datos del formulario
+    const nombre = DOM.aula.nombre.value;
+    const capacidad = parseInt(DOM.aula.capacidad.value);
+    const esAuladeOrdenadores = DOM.aula.esOrdenadores ? DOM.aula.esOrdenadores.checked : false;
+
+    // Si no es aula de ordenadores, enviamos 0, si sí, leemos el input
+    const numeroOrdenadores = esAuladeOrdenadores ? parseInt(DOM.aula.numOrdenadores.value) : 0;
+
+    // 2. Validación básica
+    if (!nombre || isNaN(capacidad)) {
+        mostrar({ error: 'Nombre y Capacidad son obligatorios' });
+        return;
+    }
+
+    try {
+        // 3. Petición POST
+        const datos = await authenticatedFetch('/aulas', 'POST', {
+            nombre,
+            capacidad,
+            esAuladeOrdenadores,
+            numeroOrdenadores
+        });
+
+        if (datos && !datos.error) {
+            mostrar({ mensaje: 'Aula creada correctamente' });
+            cargarAulas(); // Recargar la lista
+
+            // Limpiar formulario
+            DOM.aula.nombre.value = "";
+            DOM.aula.capacidad.value = "";
+            if(DOM.aula.esOrdenadores) DOM.aula.esOrdenadores.checked = false;
+            if(DOM.aula.numOrdenadores) DOM.aula.numOrdenadores.value = "";
+        } else {
+            mostrar({ error: datos.error || 'Error al crear aula' });
+        }
+    } catch (e) {
+        mostrar({ error: e });
+    }
+}
+
 // Editar Aula
 window.cargarAulaParaEditar = function(aulaString) {
     const aula = JSON.parse(decodeURIComponent(aulaString));
@@ -241,6 +282,42 @@ window.borrarAula = async function(event, id) {
 async function cargarHorarios() {
     const datos = await authenticatedFetch('/horarios');
     if (datos && !datos.error) pintarHorarios(datos);
+}
+
+async function crearHorario() {
+    // 1. Recoger datos
+    const diaSemana = DOM.horario.dia.value;
+    const horaInicio = DOM.horario.inicio.value;
+    const horaFin = DOM.horario.fin.value;
+
+    // 2. Validación
+    if (!diaSemana || !horaInicio || !horaFin) {
+        mostrar({ error: 'Todos los campos son obligatorios' });
+        return;
+    }
+
+    try {
+        // 3. Petición POST
+        const datos = await authenticatedFetch('/horarios', 'POST', {
+            diaSemana,
+            horaInicio,
+            horaFin
+        });
+
+        if (datos && !datos.error) {
+            mostrar({ mensaje: 'Horario creado correctamente' });
+            cargarHorarios(); // Recargar lista
+
+            // Limpiar formulario
+            DOM.horario.dia.value = "";
+            DOM.horario.inicio.value = "";
+            DOM.horario.fin.value = "";
+        } else {
+            mostrar({ error: datos.error || 'Error al crear horario' });
+        }
+    } catch (e) {
+        mostrar({ error: e });
+    }
 }
 
 window.cargarHorarioParaEditar = function(horarioString) {
@@ -327,8 +404,13 @@ if(btnVerReservas) btnVerReservas.addEventListener('click', cargarReservas);
 
 // Crear
 if(DOM.botones.btnCrearReserva) DOM.botones.btnCrearReserva.addEventListener('click', crearReserva);
-// Añade aquí los listeners de crearAula y crearHorario si tienes los botones en el DOM.document
-// Ejemplo: if(document.getElementById('btn-crearAula')) ...
+
+const btnCrearAula = document.getElementById('btn-crearAula');
+if(btnCrearAula) btnCrearAula.addEventListener('click', crearAula);
+
+
+const btnCrearHorario = document.getElementById('btn-crearHorario');
+if(btnCrearHorario) btnCrearHorario.addEventListener('click', crearHorario);
 
 // Editar / Cancelar (Reservas)
 const btnEditRes = document.getElementById('btn-editarReserva');
